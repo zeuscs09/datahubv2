@@ -1,0 +1,326 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:contact_id",
+ "creation": "2024-05-03 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info",
+  "contact_id",
+  "uid",
+  "first_name",
+  "last_name",
+  "column_break_wzsf",
+  "gender",
+  "gender_sd",
+  "birth_date",
+  "contact_info",
+  "phone",
+  "column_break_kzku",
+  "email",
+  "line_mid",
+  "address_info",
+  "address",
+  "state_code",
+  "province_name",
+  "column_break_flmn",
+  "city",
+  "amphur_name",
+  "sub_district",
+  "sub_district_name",
+  "postal_code",
+  "additional_info",
+  "income",
+  "contact_source",
+  "brand",
+  "column_break_xopp",
+  "status",
+  "sourceid",
+  "data_source_code",
+  "nestle_agent_referral_code",
+  "marketing_consent_info",
+  "is_consented",
+  "column_break_lapz",
+  "marketing_subscribed_date",
+  "marketing_subscribed_version",
+  "child_info",
+  "gg_hospital",
+  "gg_child_delivery_type",
+  "column_break_ddwh",
+  "gg_milk_currently_consuming",
+  "child_birthdatereliability",
+  "system_info",
+  "date_registration",
+  "last_updated"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info",
+   "fieldtype": "Section Break",
+   "label": "Basic Info"
+  },
+  {
+   "fieldname": "contact_id",
+   "fieldtype": "Data",
+   "label": "Contact ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "uid",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "UID"
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "First Name"
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Data",
+   "label": "Gender",
+   "options": "M\nF"
+  },
+  {
+   "fieldname": "gender_sd",
+   "fieldtype": "Data",
+   "label": "Gender (SD)",
+   "options": "M\nF"
+  },
+  {
+   "fieldname": "birth_date",
+   "fieldtype": "Date",
+   "label": "Birth Date"
+  },
+  {
+   "fieldname": "contact_info",
+   "fieldtype": "Section Break",
+   "label": "Contact Info"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Phone"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "line_mid",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Line MID"
+  },
+  {
+   "fieldname": "address_info",
+   "fieldtype": "Section Break",
+   "label": "Address Info"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Data",
+   "label": "Address"
+  },
+  {
+   "fieldname": "state_code",
+   "fieldtype": "Data",
+   "label": "State Code"
+  },
+  {
+   "fieldname": "province_name",
+   "fieldtype": "Data",
+   "label": "Province Name"
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Data",
+   "label": "City"
+  },
+  {
+   "fieldname": "amphur_name",
+   "fieldtype": "Data",
+   "label": "Amphur Name"
+  },
+  {
+   "fieldname": "sub_district",
+   "fieldtype": "Data",
+   "label": "Sub District"
+  },
+  {
+   "fieldname": "sub_district_name",
+   "fieldtype": "Data",
+   "label": "Sub District Name"
+  },
+  {
+   "fieldname": "postal_code",
+   "fieldtype": "Data",
+   "label": "Postal Code"
+  },
+  {
+   "fieldname": "additional_info",
+   "fieldtype": "Section Break",
+   "label": "Additional Info"
+  },
+  {
+   "fieldname": "income",
+   "fieldtype": "Data",
+   "label": "Income"
+  },
+  {
+   "fieldname": "contact_source",
+   "fieldtype": "Data",
+   "label": "Contact Source"
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Data",
+   "label": "Brand"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status",
+   "options": "1\n0"
+  },
+  {
+   "fieldname": "sourceid",
+   "fieldtype": "Data",
+   "label": "Source ID"
+  },
+  {
+   "fieldname": "data_source_code",
+   "fieldtype": "Data",
+   "label": "Data Source Code"
+  },
+  {
+   "fieldname": "nestle_agent_referral_code",
+   "fieldtype": "Data",
+   "label": "Nestle Agent Referral Code"
+  },
+  {
+   "fieldname": "marketing_consent_info",
+   "fieldtype": "Section Break",
+   "label": "Marketing Consent Info"
+  },
+  {
+   "fieldname": "is_consented",
+   "fieldtype": "Data",
+   "label": "Is Consented",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "marketing_subscribed_date",
+   "fieldtype": "Datetime",
+   "label": "Marketing Subscribed Date"
+  },
+  {
+   "fieldname": "marketing_subscribed_version",
+   "fieldtype": "Int",
+   "label": "Marketing Subscribed Version"
+  },
+  {
+   "fieldname": "child_info",
+   "fieldtype": "Section Break",
+   "label": "Child Info"
+  },
+  {
+   "fieldname": "gg_hospital",
+   "fieldtype": "Data",
+   "label": "GG Hospital"
+  },
+  {
+   "fieldname": "gg_child_delivery_type",
+   "fieldtype": "Data",
+   "label": "GG Child Delivery Type"
+  },
+  {
+   "fieldname": "gg_milk_currently_consuming",
+   "fieldtype": "Data",
+   "label": "GG Milk Currently Consuming"
+  },
+  {
+   "fieldname": "child_birthdatereliability",
+   "fieldtype": "Data",
+   "label": "Child Birth Date Reliability"
+  },
+  {
+   "fieldname": "system_info",
+   "fieldtype": "Section Break",
+   "label": "System Info"
+  },
+  {
+   "fieldname": "date_registration",
+   "fieldtype": "Datetime",
+   "label": "Date Registration"
+  },
+  {
+   "fieldname": "last_updated",
+   "fieldtype": "Datetime",
+   "label": "Last Updated"
+  },
+  {
+   "fieldname": "column_break_wzsf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_kzku",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_flmn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_xopp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_lapz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ddwh",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-04 12:45:16.920446",
+ "modified_by": "Administrator",
+ "module": "Datahubv2",
+ "name": "ETL Main Profile",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,316 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:cusid",
+ "creation": "2024-05-03 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info",
+  "cusid",
+  "motherid",
+  "fname",
+  "lname",
+  "column_break_idse",
+  "nname",
+  "gender",
+  "birthdate",
+  "child_details",
+  "child_type",
+  "child_status",
+  "child_stage",
+  "born_place_id",
+  "column_break_xawq",
+  "born_place_type",
+  "gg_hospital",
+  "birth_plan",
+  "gg_child_delivery_type",
+  "column_break_gjwk",
+  "mother_prod_id",
+  "current_mother_prod_id",
+  "firstpro",
+  "firstformula",
+  "lastpro",
+  "lastformula",
+  "gg_milk_currently_consuming",
+  "additional_info",
+  "reasonid",
+  "reason",
+  "remark",
+  "column_break_cmvy",
+  "pc_code",
+  "mother_stage",
+  "child_birthdatereliability",
+  "system_info",
+  "createid",
+  "createdate",
+  "updateid",
+  "updatedate",
+  "column_break_nbar",
+  "flag_complete",
+  "flag_active",
+  "receivedate",
+  "signature"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info",
+   "fieldtype": "Section Break",
+   "label": "Basic Info"
+  },
+  {
+   "fieldname": "cusid",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "motherid",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Mother ID",
+   "options": "ETL Main Profile"
+  },
+  {
+   "fieldname": "fname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "First Name"
+  },
+  {
+   "fieldname": "lname",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "nname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Nickname"
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "M\nF"
+  },
+  {
+   "fieldname": "birthdate",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Birth Date"
+  },
+  {
+   "fieldname": "child_details",
+   "fieldtype": "Section Break",
+   "label": "Child Details"
+  },
+  {
+   "fieldname": "child_type",
+   "fieldtype": "Data",
+   "label": "Child Type"
+  },
+  {
+   "fieldname": "child_status",
+   "fieldtype": "Data",
+   "label": "Child Status"
+  },
+  {
+   "fieldname": "child_stage",
+   "fieldtype": "Data",
+   "label": "Child Stage"
+  },
+  {
+   "fieldname": "born_place_id",
+   "fieldtype": "Data",
+   "label": "Born Place ID"
+  },
+  {
+   "fieldname": "born_place_type",
+   "fieldtype": "Data",
+   "label": "Born Place Type"
+  },
+  {
+   "fieldname": "gg_hospital",
+   "fieldtype": "Data",
+   "label": "GG Hospital"
+  },
+  {
+   "fieldname": "birth_plan",
+   "fieldtype": "Data",
+   "label": "Birth Plan"
+  },
+  {
+   "fieldname": "gg_child_delivery_type",
+   "fieldtype": "Data",
+   "label": "GG Child Delivery Type"
+  },
+  {
+   "fieldname": "mother_prod_id",
+   "fieldtype": "Data",
+   "label": "Mother Product ID"
+  },
+  {
+   "fieldname": "current_mother_prod_id",
+   "fieldtype": "Data",
+   "label": "Current Mother Product ID"
+  },
+  {
+   "fieldname": "firstpro",
+   "fieldtype": "Data",
+   "label": "First Product"
+  },
+  {
+   "fieldname": "firstformula",
+   "fieldtype": "Data",
+   "label": "First Formula"
+  },
+  {
+   "fieldname": "lastpro",
+   "fieldtype": "Data",
+   "label": "Last Product"
+  },
+  {
+   "fieldname": "lastformula",
+   "fieldtype": "Data",
+   "label": "Last Formula"
+  },
+  {
+   "fieldname": "gg_milk_currently_consuming",
+   "fieldtype": "Data",
+   "label": "GG Milk Currently Consuming"
+  },
+  {
+   "fieldname": "additional_info",
+   "fieldtype": "Section Break",
+   "label": "Additional Info"
+  },
+  {
+   "fieldname": "reasonid",
+   "fieldtype": "Data",
+   "label": "Reason ID"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Data",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Data",
+   "label": "Remark"
+  },
+  {
+   "fieldname": "pc_code",
+   "fieldtype": "Data",
+   "label": "PC Code"
+  },
+  {
+   "fieldname": "mother_stage",
+   "fieldtype": "Data",
+   "label": "Mother Stage"
+  },
+  {
+   "fieldname": "child_birthdatereliability",
+   "fieldtype": "Data",
+   "label": "Child Birth Date Reliability"
+  },
+  {
+   "fieldname": "system_info",
+   "fieldtype": "Section Break",
+   "label": "System Info"
+  },
+  {
+   "fieldname": "createid",
+   "fieldtype": "Data",
+   "label": "Create ID"
+  },
+  {
+   "fieldname": "createdate",
+   "fieldtype": "Datetime",
+   "label": "Create Date"
+  },
+  {
+   "fieldname": "updateid",
+   "fieldtype": "Data",
+   "label": "Update ID"
+  },
+  {
+   "fieldname": "updatedate",
+   "fieldtype": "Datetime",
+   "label": "Update Date"
+  },
+  {
+   "fieldname": "flag_complete",
+   "fieldtype": "Data",
+   "label": "Flag Complete",
+   "options": "C\nI"
+  },
+  {
+   "fieldname": "flag_active",
+   "fieldtype": "Data",
+   "label": "Flag Active",
+   "options": "1\n0"
+  },
+  {
+   "fieldname": "receivedate",
+   "fieldtype": "Datetime",
+   "label": "Receive Date"
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Data",
+   "label": "Signature",
+   "options": "Y\nN"
+  },
+  {
+   "fieldname": "column_break_idse",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_xawq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_gjwk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_cmvy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_nbar",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-04 12:46:27.017401",
+ "modified_by": "Administrator",
+ "module": "Datahubv2",
+ "name": "ETL Child",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

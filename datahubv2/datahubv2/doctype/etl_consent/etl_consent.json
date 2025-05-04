@@ -1,0 +1,150 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:consent_id",
+ "creation": "2024-05-03 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info",
+  "consent_id",
+  "column_break_vobr",
+  "contact_id",
+  "consent_info",
+  "consent_type",
+  "consent_status",
+  "column_break_zqdm",
+  "consent_date",
+  "consent_version",
+  "is_consented",
+  "consent_details",
+  "consent_description",
+  "consent_notes",
+  "system_info",
+  "date_registration",
+  "column_break_ygpd",
+  "last_updated"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info",
+   "fieldtype": "Section Break",
+   "label": "Basic Info"
+  },
+  {
+   "fieldname": "consent_id",
+   "fieldtype": "Data",
+   "label": "Consent ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "consent_info",
+   "fieldtype": "Section Break",
+   "label": "Consent Info"
+  },
+  {
+   "fieldname": "consent_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Consent Type",
+   "options": "PRIVACY\nMARKETING"
+  },
+  {
+   "fieldname": "consent_status",
+   "fieldtype": "Data",
+   "label": "Consent Status",
+   "options": "Active\nInactive\nRevoked"
+  },
+  {
+   "fieldname": "consent_date",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Consent Date"
+  },
+  {
+   "fieldname": "consent_version",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Consent Version"
+  },
+  {
+   "fieldname": "is_consented",
+   "fieldtype": "Data",
+   "label": "Is Consented",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "consent_details",
+   "fieldtype": "Section Break",
+   "label": "Consent Details"
+  },
+  {
+   "fieldname": "consent_description",
+   "fieldtype": "Text",
+   "label": "Consent Description"
+  },
+  {
+   "fieldname": "consent_notes",
+   "fieldtype": "Text",
+   "label": "Consent Notes"
+  },
+  {
+   "fieldname": "system_info",
+   "fieldtype": "Section Break",
+   "label": "System Info"
+  },
+  {
+   "fieldname": "date_registration",
+   "fieldtype": "Datetime",
+   "label": "Date Registration"
+  },
+  {
+   "fieldname": "last_updated",
+   "fieldtype": "Datetime",
+   "label": "Last Updated"
+  },
+  {
+   "fieldname": "contact_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Contact Id",
+   "options": "ETL Main Profile"
+  },
+  {
+   "fieldname": "column_break_vobr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_zqdm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ygpd",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-04 12:45:46.128527",
+ "modified_by": "Administrator",
+ "module": "Datahubv2",
+ "name": "ETL Consent",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

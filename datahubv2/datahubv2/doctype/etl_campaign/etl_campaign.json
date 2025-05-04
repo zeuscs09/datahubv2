@@ -1,0 +1,174 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:campaign_id",
+ "creation": "2024-05-03 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info",
+  "campaign_id",
+  "column_break_bqyx",
+  "contact_id",
+  "campaign_info",
+  "campaign_name",
+  "campaign_type",
+  "column_break_nagm",
+  "campaign_status",
+  "campaign_start_date",
+  "campaign_end_date",
+  "application_info",
+  "application_code",
+  "internal_id",
+  "internal_alternate_id",
+  "column_break_qfwy",
+  "create_date",
+  "last_update_date",
+  "system_info",
+  "date_registration",
+  "column_break_ylil",
+  "last_updated"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info",
+   "fieldtype": "Section Break",
+   "label": "Basic Info"
+  },
+  {
+   "fieldname": "campaign_id",
+   "fieldtype": "Data",
+   "label": "Campaign ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "campaign_info",
+   "fieldtype": "Section Break",
+   "label": "Campaign Info"
+  },
+  {
+   "fieldname": "campaign_name",
+   "fieldtype": "Data",
+   "label": "Campaign Name"
+  },
+  {
+   "fieldname": "campaign_type",
+   "fieldtype": "Data",
+   "label": "Campaign Type"
+  },
+  {
+   "fieldname": "campaign_status",
+   "fieldtype": "Data",
+   "label": "Campaign Status"
+  },
+  {
+   "fieldname": "campaign_start_date",
+   "fieldtype": "Date",
+   "label": "Campaign Start Date"
+  },
+  {
+   "fieldname": "campaign_end_date",
+   "fieldtype": "Date",
+   "label": "Campaign End Date"
+  },
+  {
+   "fieldname": "application_info",
+   "fieldtype": "Section Break",
+   "label": "Application Info"
+  },
+  {
+   "fieldname": "application_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Application Code"
+  },
+  {
+   "fieldname": "internal_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Internal ID"
+  },
+  {
+   "fieldname": "internal_alternate_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Internal Alternate ID"
+  },
+  {
+   "fieldname": "create_date",
+   "fieldtype": "Datetime",
+   "label": "Create Date"
+  },
+  {
+   "fieldname": "last_update_date",
+   "fieldtype": "Datetime",
+   "label": "Last Update Date"
+  },
+  {
+   "fieldname": "system_info",
+   "fieldtype": "Section Break",
+   "label": "System Info"
+  },
+  {
+   "fieldname": "date_registration",
+   "fieldtype": "Datetime",
+   "label": "Date Registration"
+  },
+  {
+   "fieldname": "last_updated",
+   "fieldtype": "Datetime",
+   "label": "Last Updated"
+  },
+  {
+   "fieldname": "contact_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Contact Id",
+   "options": "ETL Main Profile"
+  },
+  {
+   "fieldname": "column_break_nagm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_qfwy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ylil",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_bqyx",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-04 12:48:00.855914",
+ "modified_by": "Administrator",
+ "module": "Datahubv2",
+ "name": "ETL Campaign",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

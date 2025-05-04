@@ -1,0 +1,53 @@
+/* Custom styles for ETL Child form */
+.form-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.form-section h6 {
+    color: #36414c;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+/* Style for required fields */
+.required-field {
+    border-left: 3px solid #ff5858;
+}
+
+/* Style for read-only fields */
+.read-only-field {
+    background-color: #f8f9fa;
+}
+
+/* Style for error messages */
+.error-message {
+    color: #ff5858;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+/* Style for success messages */
+.success-message {
+    color: #28a745;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+/* Style for mother info section */
+.mother-info {
+    background-color: #e3f2fd;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+/* Style for child details section */
+.child-details {
+    background-color: #f3e5f5;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+} 

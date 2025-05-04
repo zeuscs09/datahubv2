@@ -1,0 +1,195 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-03-21 10:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info",
+  "inbound_id",
+  "column_break_zigf",
+  "source_ip",
+  "status",
+  "section_break_oqtz",
+  "uid",
+  "line_mid",
+  "phonenumber",
+  "column_break_rfqy",
+  "firstname",
+  "lastname",
+  "timestamps",
+  "created_at",
+  "validated_at",
+  "column_break_kgfc",
+  "processed_at",
+  "completed_at",
+  "payload_info",
+  "payload",
+  "headers",
+  "validation_info",
+  "error_message",
+  "validation_result"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info",
+   "fieldtype": "Section Break",
+   "label": "Basic Information"
+  },
+  {
+   "description": "\u0e23\u0e2b\u0e31\u0e2a\u0e1b\u0e23\u0e30\u0e08\u0e33\u0e01\u0e32\u0e23\u0e23\u0e31\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25",
+   "fieldname": "inbound_id",
+   "fieldtype": "Data",
+   "label": "Inbound ID",
+   "unique": 1
+  },
+  {
+   "description": "IP address \u0e17\u0e35\u0e48\u0e2a\u0e48\u0e07\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e21\u0e32",
+   "fieldname": "source_ip",
+   "fieldtype": "Data",
+   "label": "Source IP"
+  },
+  {
+   "description": "\u0e2a\u0e16\u0e32\u0e19\u0e30\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e21\u0e27\u0e25\u0e1c\u0e25",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nReceived\nValidated\nProcessing\nCompleted\nFailed"
+  },
+  {
+   "fieldname": "timestamps",
+   "fieldtype": "Section Break",
+   "label": "Timestamps"
+  },
+  {
+   "description": "\u0e40\u0e27\u0e25\u0e32\u0e17\u0e35\u0e48\u0e23\u0e31\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25",
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At"
+  },
+  {
+   "description": "\u0e40\u0e27\u0e25\u0e32\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25",
+   "fieldname": "validated_at",
+   "fieldtype": "Datetime",
+   "label": "Validated At"
+  },
+  {
+   "description": "\u0e40\u0e27\u0e25\u0e32\u0e17\u0e35\u0e48\u0e1b\u0e23\u0e30\u0e21\u0e27\u0e25\u0e1c\u0e25\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25",
+   "fieldname": "processed_at",
+   "fieldtype": "Datetime",
+   "label": "Processed At"
+  },
+  {
+   "description": "\u0e40\u0e27\u0e25\u0e32\u0e17\u0e35\u0e48\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e2a\u0e34\u0e49\u0e19\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e21\u0e27\u0e25\u0e1c\u0e25",
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At"
+  },
+  {
+   "fieldname": "payload_info",
+   "fieldtype": "Section Break",
+   "label": "Payload Information"
+  },
+  {
+   "description": "\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e35\u0e48\u0e23\u0e31\u0e1a\u0e21\u0e32 (JSON)",
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "Payload",
+   "options": "JSON"
+  },
+  {
+   "description": "HTTP headers (JSON)",
+   "fieldname": "headers",
+   "fieldtype": "Code",
+   "label": "Headers",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "validation_info",
+   "fieldtype": "Section Break",
+   "label": "Validation Information"
+  },
+  {
+   "description": "\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e41\u0e2a\u0e14\u0e07\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14",
+   "fieldname": "error_message",
+   "fieldtype": "Text",
+   "label": "Error Message"
+  },
+  {
+   "description": "\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 (JSON)",
+   "fieldname": "validation_result",
+   "fieldtype": "Code",
+   "label": "Validation Result",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "column_break_zigf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_kgfc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_oqtz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "uid",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "uid"
+  },
+  {
+   "fieldname": "phonenumber",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "phonenumber"
+  },
+  {
+   "fieldname": "column_break_rfqy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "firstname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "firstname"
+  },
+  {
+   "fieldname": "lastname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "lastname"
+  },
+  {
+   "fieldname": "line_mid",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "line_mid"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-03 15:10:18.534077",
+ "modified_by": "Administrator",
+ "module": "Datahubv2",
+ "name": "DH Webhook Inbound",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
