@@ -1129,3 +1129,40 @@ DO UPDATE SET syncdate = NOW()
 - Yes: ยินยอม
 - No: ไม่ยินยอม
 
+## 7. Webhook Integration Status
+
+### 7.1 Webhook Inbound (Completed)
+- ระบบสามารถรับข้อมูลจาก API ภายนอกผ่าน Webhook ได้อย่างถูกต้อง
+- ข้อมูลที่ได้รับจะถูกประมวลผลโดย DataHubProcessor และบันทึกลงฐานข้อมูล
+- การประมวลผลข้อมูลมีการจัดการความผิดพลาดและบันทึก log สำหรับการตรวจสอบ
+
+#### 7.1.1 กระบวนการประมวลผลข้อมูลจาก Webhook
+1. **การรับข้อมูล**: ระบบรับ JSON payload จาก webhook และส่งต่อไปยัง `DataHubProcessor`
+2. **การแยกและประมวลผลข้อมูล**:
+   - โปรไฟล์: ข้อมูลหลักของลูกค้าถูกประมวลผลโดย `ProfileProcessor`
+   - ข้อมูลเด็ก: ข้อมูลเด็กถูกประมวลผลโดย `ChildProcessor`
+   - แคมเปญ: ข้อมูลแคมเปญถูกประมวลผลโดย `CampaignProcessor`
+   - ความยินยอม: ข้อมูลความยินยอมถูกประมวลผลโดย `ConsentProcessor`
+3. **การแปลงข้อมูล**: ข้อมูลที่ได้รับถูกแปลงให้สอดคล้องกับโครงสร้าง DocType ของ DataHub
+4. **การค้นหาและอัปเดตข้อมูล Lookup**: ข้อมูลจะถูกแปลงตาม lookup table ที่กำหนดไว้
+5. **การบันทึกข้อมูล**: ข้อมูลถูกบันทึกลงในฐานข้อมูล Frappe
+6. **การบันทึก log**: ระบบบันทึก log ทุกขั้นตอนเพื่อการตรวจสอบและแก้ไขปัญหา
+
+### 7.2 Webhook Outbound (Pending)
+- อยู่ระหว่างการพัฒนาระบบสำหรับส่งข้อมูลไปยังระบบภายนอก
+- จะใช้ DocType `DH Webhook Outbound` เพื่อเก็บข้อมูลที่ต้องการส่งและสถานะการส่ง
+- มีแผนในการพัฒนาระบบ retry สำหรับการส่งข้อมูลที่ไม่สำเร็จ
+
+### 7.3 Flow Diagram
+```
+[ระบบภายนอก] --webhook payload--> [DataHub Webhook Inbound] --> [DataHubProcessor]
+                                                                   |
+                                                                   |--> [ProfileProcessor]
+                                                                   |--> [ChildProcessor]
+                                                                   |--> [CampaignProcessor]
+                                                                   |--> [ConsentProcessor]
+                                                                   |--> [Update Lookup Data]
+                                                                   |
+[ระบบภายนอก] <--webhook outbound-- [DataHub Webhook Outbound] <-- [Frappe Database]
+```
+
