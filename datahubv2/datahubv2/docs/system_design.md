@@ -1035,100 +1035,6 @@ DO UPDATE SET syncdate = NOW()
    - Raise exceptions for critical errors
    - Update related records only after successful main record update
 
-## 3. Data Mapping and Validation
-
-### 3.1 JSON Schema
-
-#### 3.1.1 Main Profile Schema
-```json
-{
-  "uid": "string",                           // UUID ของลูกค้า (จำเป็น)
-  "phonenumber": "string",                   // เบอร์โทรศัพท์
-  "line_mid": "string",                      // LINE ID
-  "firstname": "string",                     // ชื่อ
-  "lastname": "string",                      // นามสกุล
-  "addressline1": "string",                  // ที่อยู่บรรทัดที่ 1
-  "addressline2": "string",                  // ตำบล
-  "city": "string",                          // อำเภอ
-  "region": "string",                        // จังหวัด
-  "zip": "string",                           // รหัสไปรษณีย์
-  "consent_date": "YYYY-MM-DD HH:MM:SS",     // วันที่ให้ความยินยอมข้อมูลส่วนบุคคล
-  "consent_version": 1,                      // เวอร์ชันของความยินยอมข้อมูลส่วนบุคคล
-  "date_registration": "YYYY-MM-DD HH:MM:SS", // วันที่ลงทะเบียน
-  "last_updated": "YYYY-MM-DD HH:MM:SS",     // วันที่อัพเดตล่าสุด
-  "brand": "WYETH",                          // แบรนด์ (ค่าเริ่มต้น: "WYETH")
-  "status": 1,                               // สถานะ (1=ใช้งาน, 0=ไม่ใช้งาน)
-  "data_source_code": "string",              // รหัสแหล่งที่มาของข้อมูล
-  "email": "string",                         // อีเมล
-  "nestle_agent_referral_code": "string",    // รหัสอ้างอิงตัวแทน
-  "gender": "string",                        // เพศ
-  "Is_MKT_Subscribed": "Yes/No",             // การยินยอมรับข้อมูลการตลาด
-  "MKT_Subscribed_Date": "YYYY-MM-DD HH:MM:SS", // วันที่ยินยอมรับข้อมูลการตลาด
-  "MKT_Subscribed_Version": 1,               // เวอร์ชันการยินยอมรับข้อมูลการตลาด
-  "mom_birthdate": "YYYY-MM-DD",             // วันเกิดของแม่
-  "contact_source": "string",                // แหล่งที่มาของการติดต่อ
-  "income": "string",                        // รายได้
-  "child_birthdatereliability": "string",    // ความน่าเชื่อถือของวันเกิดเด็ก
-  "gg_hospital": "string",                   // ประเภทโรงพยาบาล (จากเด็กคนล่าสุด)
-  "gg_child_delivery_type": "string",        // ประเภทการคลอด (จากเด็กคนล่าสุด)
-  "gg_milk_currently_consuming": "string"    // สูตรนมที่ใช้ในปัจจุบัน (จากเด็กคนล่าสุด)
-}
-```
-
-#### 3.1.2 Child Schema
-```json
-{
-  "child_id": "string",                  // รหัสเด็ก (จำเป็น)
-  "child_birthdate": "YYYY-MM-DD",       // วันเกิดเด็ก
-  "child_firstname": "string",           // ชื่อเด็ก
-  "child_add_date": "YYYY-MM-DD HH:MM:SS", // วันที่เพิ่มข้อมูลเด็ก
-  "reason": "string",                    // เหตุผล
-  "pc_code": "string",                   // รหัส PC
-  "old_mother_prod": "string",           // ผลิตภัณฑ์เดิมของแม่
-  "current_mother_prod": "string"        // ผลิตภัณฑ์ปัจจุบันของแม่
-}
-```
-
-#### 3.1.3 Campaign Schema
-```json
-{
-  "applicationCode": "string",           // รหัสแคมเปญ (จำเป็น)
-  "internaIdentifier": "string",         // รหัสภายใน (จำเป็น)
-  "internalAlternateIdentifier": "string", // รหัสภายในสำรอง
-  "createDate": "YYYY-MM-DD HH:MM:SS",   // วันที่สร้าง
-  "lastUpdateDate": "YYYY-MM-DD HH:MM:SS" // วันที่อัพเดทล่าสุด
-}
-```
-
-### 3.2 Data Validation Rules
-
-#### 3.2.1 Required Fields
-- Profile: uid, phonenumber, firstname, lastname
-- Child: child_id, child_birthdate, child_firstname
-- Campaign: applicationCode, internaIdentifier
-
-#### 3.2.2 Format Rules
-- วันที่: YYYY-MM-DD HH:MM:SS
-- วันเกิด: YYYY-MM-DD
-- เบอร์โทร: ตัวเลข 10 หลัก
-- รหัสไปรษณีย์: ตัวเลข 5 หลัก
-- อีเมล: รูปแบบมาตรฐาน
-- รายได้: ตัวเลข
-
-### 3.3 Lookup Values
-
-#### 3.3.1 Gender
-- M: ชาย
-- F: หญิง
-
-#### 3.3.2 Status
-- 1: ใช้งาน
-- 0: ไม่ใช้งาน
-
-#### 3.3.3 Marketing Consent
-- Yes: ยินยอม
-- No: ไม่ยินยอม
-
 ## 7. Webhook Integration Status
 
 ### 7.1 Webhook Inbound (Completed)
@@ -1165,4 +1071,78 @@ DO UPDATE SET syncdate = NOW()
                                                                    |
 [ระบบภายนอก] <--webhook outbound-- [DataHub Webhook Outbound] <-- [Frappe Database]
 ```
+
+## 8. DataHub to IC360 Synchronization
+
+### 8.1 การซิงค์ข้อมูลจาก DataHub ไปยัง IC360
+ระบบ DataHub มีความสามารถในการซิงค์ข้อมูลที่มีอยู่ในระบบไปยังฐานข้อมูล IC360 ผ่านการใช้งาน `IC360Client` โดยมีองค์ประกอบหลักดังนี้:
+
+1. **กลไกการซิงค์ข้อมูล**: ระบบจะซิงค์ข้อมูลจาก DataHub ไปยัง IC360 ผ่านฟังก์ชัน `sync_to_ic360` ซึ่งรองรับทั้งการซิงค์แบบเลือกเฉพาะโปรไฟล์ และการซิงค์ทั้งหมด
+
+2. **การแปลงข้อมูล Lookup**: ก่อนที่จะส่งโปรไฟล์ไปยัง IC360 ระบบจะแปลงข้อมูลตาม lookup table ที่กำหนดไว้
+
+3. **IC360Processor**: คลาสที่จัดการกับการอัพเดทข้อมูลในฐานข้อมูล IC360 ประกอบด้วยเมธอดต่างๆ สำหรับการอัพเดทข้อมูลแต่ละประเภท:
+   - `update_profile`: อัพเดทข้อมูลโปรไฟล์
+   - `update_child`: อัพเดทข้อมูลเด็ก
+   - `update_consent`: อัพเดทข้อมูลความยินยอม
+   - `update_campaign`: อัพเดทข้อมูลแคมเปญ
+
+4. **การบันทึก Sync Log**: ทุกการซิงค์ข้อมูลจะมีการบันทึก log ในตาราง `ETL Sync Log` เพื่อใช้ในการติดตามและตรวจสอบ
+
+### 8.2 กระบวนการทำงาน
+1. **เริ่มต้นการซิงค์**:
+   - ผู้ใช้เรียกใช้งานฟังก์ชัน `sync_to_ic360` โดยระบุ profile_id (หรือไม่ระบุเพื่อซิงค์ทั้งหมด)
+   - ระบบสร้าง Sync Log เพื่อบันทึกการทำงาน
+
+2. **ดึงข้อมูลจาก DataHub**:
+   - ถ้าระบุ profile_id: ดึงข้อมูลเฉพาะโปรไฟล์นั้น
+   - ถ้าไม่ระบุ: ดึงโปรไฟล์ทั้งหมดที่ยังไม่ได้ซิงค์ (โดยใช้ฟิลด์ is_synced_to_ic360)
+
+3. **วนลูปแต่ละโปรไฟล์**:
+   - แปลงข้อมูล lookup ก่อนส่งไปยัง IC360
+   - อัพเดทข้อมูลโปรไฟล์ไปยัง IC360
+   - ดึงและอัพเดทข้อมูลเด็กที่เกี่ยวข้อง
+   - ดึงและอัพเดทข้อมูลความยินยอม
+   - ดึงและอัพเดทข้อมูลแคมเปญ
+
+4. **จัดการความผิดพลาด**:
+   - จัดการความผิดพลาดในแต่ละโปรไฟล์แยกกัน
+   - บันทึกผลลัพธ์ทั้งสำเร็จและไม่สำเร็จ
+
+5. **อัพเดทสถานะในระบบ**:
+   - อัพเดทสถานะการซิงค์ในแต่ละโปรไฟล์
+   - อัพเดท Sync Log ด้วยผลลัพธ์ทั้งหมด
+
+### 8.3 IC360Client
+ไลบรารี `IC360Client` ทำหน้าที่เชื่อมต่อกับฐานข้อมูล IC360 และรัน SQL query ต่างๆ โดยมีคุณสมบัติดังนี้:
+
+1. **การจัดการการเชื่อมต่อ**:
+   - สร้างการเชื่อมต่อเมื่อมีการเรียกใช้งาน
+   - จัดการการปิดการเชื่อมต่อเมื่อทำงานเสร็จ
+
+2. **การรัน SQL Query**:
+   - รองรับการทำ SELECT, INSERT, UPDATE, DELETE
+   - จัดการ transaction และ rollback เมื่อเกิดข้อผิดพลาด
+
+3. **การจัดการความผิดพลาด**:
+   - บันทึกข้อผิดพลาดในกรณีที่เกิดปัญหาในการเชื่อมต่อหรือการรันคำสั่ง SQL
+
+### 8.4 SQL Queries
+ระบบใช้ SQL queries ตามที่กำหนดไว้ใน System Design ส่วนที่ 6 (IC360 Update Specifications) เพื่อตรวจสอบว่าข้อมูลมีอยู่แล้วหรือไม่ และดำเนินการ INSERT หรือ UPDATE ตามความเหมาะสม
+
+### 8.5 Flow Diagram
+```
+[DataHub]  -->  [sync_to_ic360]  -->  [IC360Processor]
+    |                                        |
+    |                                        v
+[ETL Sync Log]  <--  [Error Handling]  <--  [IC360Client]  -->  [IC360 Database]
+```
+
+### 8.6 สถานะการพัฒนา
+- [x] การเชื่อมต่อกับ IC360 ด้วย IC360Client
+- [x] การแปลงข้อมูล Lookup ระหว่าง DataHub และ IC360
+- [x] การสร้าง SQL queries สำหรับการ INSERT และ UPDATE ข้อมูล
+- [ ] การสร้างระบบ Scheduled Jobs สำหรับการซิงค์อัตโนมัติ
+- [ ] การพัฒนาระบบจัดการข้อผิดพลาดและการ retry
+- [ ] การทดสอบเต็มรูปแบบกับฐานข้อมูล IC360 จริง
 

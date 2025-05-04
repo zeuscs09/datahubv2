@@ -6,8 +6,8 @@ from .processors.child_processor import ChildProcessor
 from .processors.campaign_processor import CampaignProcessor
 from .processors.consent_processor import ConsentProcessor
 from .processors.ic360_processor import IC360Processor
-from datahub.utils.general import get_lookup_formula,get_lookup_data
-from datahub.lib.ic360.client import IC360Client
+from ..utils.general import get_lookup_formula, get_lookup_data
+from ..lib.ic360.client import IC360Client
 
 class DataHubProcessor:
     def __init__(self):
@@ -57,13 +57,14 @@ class DataHubProcessor:
                 district_name=main_profile.sub_district_name
             )
             
-            if area_info and len(area_info) > 0:
+            if area_info and isinstance(area_info, list) and len(area_info) > 0:
                 area = area_info[0]
-                main_profile.state_code = area["province_code"]
-                main_profile.city = area["amphur_code"]
-                main_profile.sub_district = area["district_code"]
-                if area["zipcode"] and not main_profile.postal_code:
-                    main_profile.postal_code = area["zipcode"]
+                if isinstance(area, dict):
+                    main_profile.state_code = area.get("province_code")
+                    main_profile.city = area.get("amphur_code")
+                    main_profile.sub_district = area.get("district_code")
+                    if area.get("zipcode") and not main_profile.postal_code:
+                        main_profile.postal_code = area.get("zipcode")
        
         
         # บันทึก main profile
@@ -88,23 +89,24 @@ class DataHubProcessor:
                 frappe.log_error(message=f"child_profile: {child_profile}", title="update_datahub_lookup:child_profile")
                 child_profile.save(ignore_permissions=True)
         
-    def update_sd_lookup(self,main_profile,child_profile):
+    def update_sd_lookup(self, main_profile, child_profile):
         """ค้นหาข้อมูลจาก main profile และ child profile"""
-        main_profile.data_source_code = get_lookup_data("IC360","DataSourceCode".main_profile.source_id)
-        main_profile.gender_sd  = get_lookup_data("IC360","GENDER",main_profile.gender)
+        if main_profile:
+            main_profile.data_source_code = get_lookup_data("IC360", "DataSourceCode", main_profile.sourceid)
+            main_profile.gender_sd = get_lookup_data("IC360", "GENDER", main_profile.gender)
+            main_profile.save(ignore_permissions=True)
         
-        
-        child_profile.gg_child_delivery_type  = get_lookup_data("IC360","NL_BIRTH_PLAN",child_profile.birth_plan)
-        child_profile.gg_hospital = get_lookup_data("IC360","NL_ANC_PLACE",child_profile.born_place_type )
-        child_profile.child_birthdatereliability = get_lookup_data("IC360","NL_MOTHERSTAGE",child_profile.mother_stage )
-       
-        lastpro_key=child_profile.lastpro + "-" + child_profile.lastformula
-        child_profile.gg_milk_currently_consuming = get_lookup_formula("IC360", lastpro_key)
+        if child_profile:
+            child_profile.gg_child_delivery_type = get_lookup_data("IC360", "NL_BIRTH_PLAN", child_profile.birth_plan)
+            child_profile.gg_hospital = get_lookup_data("IC360", "NL_ANC_PLACE", child_profile.born_place_type)
+            child_profile.child_birthdatereliability = get_lookup_data("IC360", "NL_MOTHERSTAGE", child_profile.mother_stage)
+           
+            if child_profile.lastpro and child_profile.lastformula:
+                lastpro_key = child_profile.lastpro + "-" + child_profile.lastformula
+                child_profile.gg_milk_currently_consuming = get_lookup_formula("IC360", lastpro_key)
             
-        
-        main_profile.save(ignore_permissions=True)
-        child_profile.save(ignore_permissions=True)
-    def sync_from_webhook(self, webhook_doc):
+            child_profile.save(ignore_permissions=True)
+    def sync_from_webhook(self, webhook_doc,sync_type="MANUAL"):
         """ซิงค์ข้อมูลจาก webhook inbound"""
         try:
             # บันทึก log สำหรับการเริ่มต้น sync
@@ -181,6 +183,8 @@ class DataHubProcessor:
                 "status": "success",
                 "profile_id": profile_id
             })
+            
+            self.sync_to_ic360(profile_id)
             webhook_doc.save(ignore_permissions=True)
             
             return {"status": "success", "message": "Webhook data synced successfully", "profile_id": profile_id}
@@ -200,6 +204,151 @@ class DataHubProcessor:
                 pass
                 
             raise e
+    
+    def sync_to_ic360(self, profile_id=None, sync_type="MANUAL"):
+        """ซิงค์ข้อมูลจาก DataHub ไปยัง IC360"""
+        try:
+            # บันทึก log สำหรับการเริ่มต้น sync
+            log_id = self.create_sync_log(
+                sync_type=sync_type,
+                raw_data={"profile_id": profile_id, "sync_type": sync_type},
+                status="Processing"
+            )
+            
+            frappe.log_error(message=f"Starting IC360 sync for profile_id: {profile_id}, sync_type: {sync_type}", title="IC360 Sync Start")
+            
+            # ดึงข้อมูลโปรไฟล์จาก DataHub
+            if profile_id:
+                # ซิงค์เฉพาะโปรไฟล์ที่ระบุ
+                profile_list = [frappe.get_doc(self.profile_doctype, profile_id)]
+            else:
+                # ดึงโปรไฟล์ทั้งหมดที่ยังไม่ได้ซิงค์หรือที่มีการอัพเดท
+                # เงื่อนไขในการเลือกโปรไฟล์ต้องกำหนดเพิ่มเติม เช่น มีฟิลด์ is_synced หรือ last_synced_to_ic360
+                profile_list = frappe.get_all(
+                    self.profile_doctype,
+                    filters={"is_synced_to_ic360": 0},  # สมมติว่ามีฟิลด์นี้
+                    fields=["name"],
+                    limit=100  # จำกัดจำนวนโปรไฟล์ที่ซิงค์ในแต่ละครั้ง
+                )
+                profile_list = [frappe.get_doc(self.profile_doctype, p.name) for p in profile_list]
+            
+            results = []
+            for profile in profile_list:
+                try:
+                    # อัพเดทข้อมูล lookup ก่อนส่งไปยัง IC360
+                    self.update_sd_lookup(profile, None)
+                    
+                    # อัพเดทข้อมูลโปรไฟล์ไปยัง IC360
+                    profile_result = self.update_ic360_profile(profile)
+                    
+                    # ดึงข้อมูลเด็กที่เกี่ยวข้อง
+                    children = frappe.get_all(
+                        self.child_doctype,
+                        filters={"motherid": profile.name},
+                        fields=["name"]
+                    )
+                    
+                    child_results = []
+                    for child in children:
+                        child_doc = frappe.get_doc(self.child_doctype, child.name)
+                        
+                        # อัพเดทข้อมูล lookup สำหรับเด็ก
+                        self.update_sd_lookup(profile, child_doc)
+                        
+                        # อัพเดทข้อมูลเด็กไปยัง IC360
+                        child_result = self.update_ic360_child(child_doc)
+                        child_results.append({
+                            "child_id": child_doc.name,
+                            "result": child_result
+                        })
+                    
+                    # ดึงข้อมูลความยินยอม
+                    consents = frappe.get_all(
+                        self.consent_doctype,
+                        filters={"contact_id": profile.name},
+                        fields=["name"]
+                    )
+                    
+                    consent_results = []
+                    for consent in consents:
+                        consent_doc = frappe.get_doc(self.consent_doctype, consent.name)
+                        
+                        # อัพเดทข้อมูลความยินยอมไปยัง IC360
+                        consent_result = self.update_ic360_consent(consent_doc)
+                        consent_results.append({
+                            "consent_id": consent_doc.name,
+                            "result": consent_result
+                        })
+                    
+                    # ดึงข้อมูลแคมเปญ
+                    campaigns = frappe.get_all(
+                        self.campaign_doctype,
+                        filters={"contact_id": profile.name},
+                        fields=["name"]
+                    )
+                    
+                    campaign_results = []
+                    for campaign in campaigns:
+                        campaign_doc = frappe.get_doc(self.campaign_doctype, campaign.name)
+                        
+                        # อัพเดทข้อมูลแคมเปญไปยัง IC360
+                        campaign_result = self.update_ic360_campaign(campaign_doc)
+                        campaign_results.append({
+                            "campaign_id": campaign_doc.name,
+                            "result": campaign_result
+                        })
+                    
+                    # บันทึกผลการซิงค์
+                    result = {
+                        "profile_id": profile.name,
+                        "profile_result": profile_result,
+                        "child_results": child_results,
+                        "consent_results": consent_results,
+                        "campaign_results": campaign_results
+                    }
+                    
+                    results.append(result)
+                    
+                    # อัพเดทสถานะการซิงค์ของโปรไฟล์
+                    # profile.is_synced_to_ic360 = 1  # สมมติว่ามีฟิลด์นี้
+                    # profile.last_synced_to_ic360 = datetime.now()
+                    profile.save(ignore_permissions=True)
+                    
+                except Exception as e:
+                    frappe.log_error(message=f"IC360 sync error for profile {profile.name}: {str(e)}", title="IC360 Sync Profile Error")
+                    results.append({
+                        "profile_id": profile.name,
+                        "error": str(e)
+                    })
+            
+            # อัพเดท sync log
+            log_doc = frappe.get_doc(self.sync_log_doctype, log_id)
+            log_doc.status = "Completed"
+            log_doc.processed_records = len(results)
+            log_doc.total_records = len(profile_list)
+            log_doc.processing_result = frappe.as_json(results)
+            log_doc.save(ignore_permissions=True)
+            
+            return {
+                "status": "success", 
+                "message": f"Synced {len(results)} profiles to IC360", 
+                "results": results
+            }
+            
+        except Exception as e:
+            frappe.log_error(message=f"IC360 sync error: {str(e)}\n{frappe.get_traceback()}", title="IC360 Sync Error")
+            
+            # อัพเดท sync log
+            if log_id:
+                try:
+                    log_doc = frappe.get_doc(self.sync_log_doctype, log_id)
+                    log_doc.status = "Failed"
+                    log_doc.error_log = str(e)
+                    log_doc.save(ignore_permissions=True)
+                except:
+                    pass
+            
+            return {"status": "error", "message": str(e)}
     
     def create_sync_log(self, sync_type, raw_data, status="Pending"):
         """สร้างบันทึกการซิงค์"""

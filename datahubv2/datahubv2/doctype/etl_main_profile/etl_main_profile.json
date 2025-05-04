@@ -53,6 +53,7 @@
   "child_birthdatereliability",
   "system_info",
   "date_registration",
+  "column_break_pgwr",
   "last_updated"
  ],
  "fields": [
@@ -298,11 +299,15 @@
   {
    "fieldname": "column_break_ddwh",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_pgwr",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-04 12:45:16.920446",
+ "modified": "2025-05-04 13:23:09.328150",
  "modified_by": "Administrator",
  "module": "Datahubv2",
  "name": "ETL Main Profile",
