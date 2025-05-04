@@ -53,7 +53,12 @@ def profile():
             })
         })
         webhook.insert(ignore_permissions=True)
-        
+        frappe.enqueue(
+            method="datahubv2.core.job.sync_webhook_job",
+            queue="default",
+            timeout=300,
+            webhook_id=webhook.name
+        )
         return {
             "status": "success",
             "message": "Profile received successfully",
