@@ -259,7 +259,8 @@ def transform_child_moreinfo_for_ic360(child_data):
         "birth_plan": child_data.get("birth_plan") or "-",
         "mother_prod_id": child_data.get("mother_prod_id") or "0",
         "current_mother_prod_id": child_data.get("current_mother_prod_id") or "0",
-        "pc_code": child_data.get("pc_code") or ""
+        "pc_code": child_data.get("pc_code") or "",
+        "mother_stage": child_data.get("mother_stage") or ""
     }
 
 def transform_marketing_consent_for_ic360(consent_data):

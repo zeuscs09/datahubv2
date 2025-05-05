@@ -105,7 +105,7 @@ class DataHubProcessor:
                 lastpro_key = child_profile.lastpro + "-" + child_profile.lastformula
                 child_profile.gg_milk_currently_consuming = get_lookup_formula("IC360", lastpro_key)
             
-        child_profile.save(ignore_permissions=True)
+            child_profile.save(ignore_permissions=True)
     def sync_from_webhook(self, webhook_doc,sync_type="MANUAL"):
         """ซิงค์ข้อมูลจาก webhook inbound"""
         try:

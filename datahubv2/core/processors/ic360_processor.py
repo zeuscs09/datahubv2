@@ -226,11 +226,11 @@ class IC360Processor:
                         INSERT INTO ks_contact_addr_dtl (
                             contact_id, address_type, addr_1,
                             sub_district, city, state_code, country_code,
-                            create_dt, last_upd_dt
+                            create_dt, last_upd_dt,addr_seq_no
                         ) VALUES (
                             %(contact_id)s, %(address_type)s, %(addr_1)s,
                             %(sub_district)s, %(city)s, %(state_code)s, %(country_code)s,
-                            NOW(), NOW()
+                            NOW(), NOW(),1
                         )
                     """
                     self.client.execute_query(insert_addr_query, address_data)
@@ -350,7 +350,7 @@ class IC360Processor:
                 
         except Exception as e:
             frappe.log_error(message=f"IC360 child update error: {str(e)}", title="IC360 Child Update Error")
-            result = {"status": "error", "message": str(e)}
+            raise e
             
         finally:
             # ปิดการเชื่อมต่อ
