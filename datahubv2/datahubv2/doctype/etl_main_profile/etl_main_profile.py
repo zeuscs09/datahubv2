@@ -15,16 +15,17 @@ class ETLMainProfile(Document):
 
     def validate_data_types(self):
         # Validate phone number format
-        if self.phone and not self.phone.isdigit():
-            frappe.throw("Phone number must contain only digits")
+        # if self.phone and not self.phone.isdigit():
+        #     frappe.throw("Phone number must contain only digits")
 
-        # Validate email format
-        if self.email and '@' not in self.email:
-            frappe.throw("Invalid email format")
+        # # Validate email format
+        # if self.email and '@' not in self.email:
+        #     frappe.throw("Invalid email format")
 
-        # Validate postal code format
-        if self.postal_code and (not self.postal_code.isdigit() or len(self.postal_code) != 5):
-            frappe.throw("Postal code must be 5 digits")
+        # # Validate postal code format
+        # if self.postal_code and (not self.postal_code.isdigit() or len(self.postal_code) != 5):
+        #     frappe.throw("Postal code must be 5 digits")
+        pass
 
     def set_default_values(self):
         if not self.gender:
