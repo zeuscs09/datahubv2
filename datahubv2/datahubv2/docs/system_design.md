@@ -253,7 +253,7 @@ LEFT JOIN
 LEFT JOIN 
     nl_query_smartdata_project_uuid_migration uuid ON c.contact_id = uuid.contact_id
 WHERE 
-    c.contact_id = %s
+    c.contact_id = %(contact_id)s
 
 -- Area Information Query
 SELECT
@@ -267,9 +267,9 @@ SELECT
 FROM
     ks_province
 WHERE 
-    province_name = %s
-    AND amphur_name = %s
-    AND district_name = %s
+    province_name = %(province_name)s
+    AND amphur_name = %(amphur_name)s
+    AND district_name = %(district_name)s
 LIMIT 1
 ```
 
@@ -325,7 +325,7 @@ SELECT
     create_dt,
     last_upd_dt
 FROM nl_contact_campaign 
-WHERE contact_id = %s
+WHERE contact_id = %(contact_id)s
 ```
 
 ### 4.4 ETL Consent Queries
@@ -341,7 +341,7 @@ SELECT
     create_dt,
     last_upd_dt
 FROM nl_primary_consent 
-WHERE contact_id = %s
+WHERE contact_id = %(contact_id)s
 
 -- Marketing Consent Query
 SELECT 
@@ -353,7 +353,7 @@ SELECT
     create_dt,
     last_upd_dt
 FROM nl_marketing_consent 
-WHERE contact_id = %s
+WHERE contact_id = %(contact_id)s
 ```
 
 ### 4.5 Sync Queries
@@ -392,7 +392,7 @@ WHERE ds.ref_no IS NULL
 
 -- Sync Record Query
 INSERT INTO datahub_sync (ref_no, syncdate)
-VALUES (%s, NOW())
+VALUES (%(ref_no)s, NOW())
 ON CONFLICT (ref_no) 
 DO UPDATE SET syncdate = NOW()
 ```
@@ -1137,12 +1137,4 @@ DO UPDATE SET syncdate = NOW()
     |                                        v
 [ETL Sync Log]  <--  [Error Handling]  <--  [IC360Client]  -->  [IC360 Database]
 ```
-
-### 8.6 สถานะการพัฒนา
-- [x] การเชื่อมต่อกับ IC360 ด้วย IC360Client
-- [x] การแปลงข้อมูล Lookup ระหว่าง DataHub และ IC360
-- [x] การสร้าง SQL queries สำหรับการ INSERT และ UPDATE ข้อมูล
-- [ ] การสร้างระบบ Scheduled Jobs สำหรับการซิงค์อัตโนมัติ
-- [ ] การพัฒนาระบบจัดการข้อผิดพลาดและการ retry
-- [ ] การทดสอบเต็มรูปแบบกับฐานข้อมูล IC360 จริง
 

@@ -1,0 +1,57 @@
+<!-- ส่วนของ Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container">
+        <!-- <a class="navbar-brand" href="/">
+            <img src="/assets/datahubv2/images/logo.png" alt="DataHub Logo" height="40" onerror="this.src='/assets/datahubv2/images/default-logo.png'; this.onerror=null;">
+        </a> -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if frappe.request.path == '/dh_index' else '' }}" href="/dh_index">หน้าหลัก</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if '/dh_profiles' in frappe.request.path else '' }}" href="/dh_profiles">ข้อมูลคุณแม่</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        ระบบซิงค์ข้อมูล
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="/app/etl-main-profile">ETL Main Profiles</a></li>
+                        <li><a class="dropdown-item" href="/app/etl-child">ETL Children</a></li>
+                        <li><a class="dropdown-item" href="/app/etl-campaign">ETL Campaigns</a></li>
+                        <li><a class="dropdown-item" href="/app/etl-consent">ETL Consents</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/app/data-etl-log">ETL Logs</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if '/reports' in frappe.request.path else '' }}" href="/reports">รายงาน</a>
+                </li>
+            </ul>
+            <div class="d-flex">
+                {% if frappe.session.user == 'Guest' %}
+                <a href="/login" class="btn btn-outline-primary btn-sm me-2">เข้าสู่ระบบ</a>
+                {% else %}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="userMenu"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user me-1"></i> {{ frappe.session.user }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                        <li><a class="dropdown-item" href="/app">Desk</a></li>
+                        <li><a class="dropdown-item" href="/app/user-profile">โปรไฟล์</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/app/logout">ออกจากระบบ</a></li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav> 

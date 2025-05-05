@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataHub | ระบบจัดการข้อมูลคุณแม่และเด็ก</title>
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Google Fonts Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, #ff91a4 0%, #ff7eb3 100%);
+            color: white;
+            padding: 5rem 0;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .hero-section h1 {
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .hero-section p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            opacity: 0.9;
+        }
+        
+        .feature-card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+            background-color: white;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff91a4 0%, #ff7eb3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+        
+        .feature-icon i {
+            font-size: 2rem;
+            color: white;
+        }
+        
+        .stats-section {
+            background-color: white;
+            padding: 4rem 0;
+            margin: 3rem 0;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #ff7eb3;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-title {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .btn-primary {
+            background-color: #ff7eb3;
+            border-color: #ff7eb3;
+            font-weight: 500;
+            padding: 0.6rem 1.5rem;
+            border-radius: 30px;
+        }
+        
+        .btn-primary:hover {
+            background-color: #ff91a4;
+            border-color: #ff91a4;
+        }
+        
+        .btn-outline-primary {
+            color: #ff7eb3;
+            border-color: #ff7eb3;
+            font-weight: 500;
+            padding: 0.6rem 1.5rem;
+            border-radius: 30px;
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: #ff7eb3;
+            border-color: #ff7eb3;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 3rem 0;
+            }
+            
+            .hero-section h1 {
+                font-size: 2.2rem;
+            }
+            
+            .hero-section p {
+                font-size: 1rem;
+            }
+            
+            .feature-card {
+                margin-bottom: 2rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    {% include "templates/includes/navbar.html" %}
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <h1>DataHub</h1>
+            <p>ระบบจัดการข้อมูลสำหรับคุณแม่และเด็กแบบครบวงจร ช่วยให้คุณบริหารจัดการข้อมูลได้อย่างมีประสิทธิภาพ ไม่ซับซ้อน และใช้งานง่าย</p>
+            <div>
+                <a href="/dh_profiles" class="btn btn-outline-light btn-lg me-2">ดูข้อมูลคุณแม่</a>
+                <a href="/app" class="btn btn-light btn-lg">ไปที่ระบบจัดการ</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="container mb-5">
+        <div class="text-center mb-5">
+            <h2 class="mb-3">คุณสมบัติของระบบ</h2>
+            <p class="text-muted mb-0">DataHub ให้คุณจัดการข้อมูลคุณแม่และเด็กได้อย่างสะดวกรวดเร็ว</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card feature-card p-4">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h4>จัดการข้อมูลคุณแม่</h4>
+                        <p class="text-muted">บันทึกและอัปเดตข้อมูลคุณแม่ได้อย่างสะดวก พร้อมระบบค้นหาที่รวดเร็ว</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card p-4">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-baby"></i>
+                        </div>
+                        <h4>ติดตามพัฒนาการเด็ก</h4>
+                        <p class="text-muted">เก็บประวัติและติดตามพัฒนาการของเด็กได้อย่างต่อเนื่องและมีประสิทธิภาพ</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card p-4">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                        <h4>จัดการแคมเปญ</h4>
+                        <p class="text-muted">จัดการแคมเปญการตลาดสำหรับคุณแม่และเด็กได้อย่างมีประสิทธิภาพ</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card p-4">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <h4>ซิงค์ข้อมูล</h4>
+                        <p class="text-muted">ซิงค์ข้อมูลระหว่าง DataHub และ IC360 ได้อย่างอัตโนมัติและแม่นยำ</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card p-4">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h4>รายงานและวิเคราะห์</h4>
+                        <p class="text-muted">สร้างรายงานและวิเคราะห์ข้อมูลได้ตามต้องการ เพื่อการตัดสินใจที่ถูกต้อง</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card p-4">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h4>การยินยอมและความปลอดภัย</h4>
+                        <p class="text-muted">จัดการการยินยอมและความปลอดภัยของข้อมูลตามมาตรฐาน PDPA</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ stats.profiles_count }}</div>
+                        <div class="stat-title">จำนวนคุณแม่</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ stats.children_count }}</div>
+                        <div class="stat-title">จำนวนบุตร</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ stats.campaigns_count }}</div>
+                        <div class="stat-title">แคมเปญทั้งหมด</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ stats.active_consents }}</div>
+                        <div class="stat-title">การยินยอมที่ใช้งานอยู่</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="container text-center mb-5">
+        <h2 class="mb-4">เริ่มใช้งานวันนี้</h2>
+        <p class="text-muted mb-4">สัมผัสประสบการณ์การจัดการข้อมูลที่ดีที่สุดสำหรับคุณแม่และเด็ก</p>
+        <a href="/dh_profiles" class="btn btn-primary btn-lg me-2">ดูข้อมูลคุณแม่</a>
+        <a href="/app" class="btn btn-outline-primary btn-lg">ไปที่ระบบจัดการ</a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white py-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; 2024 DataHub. สงวนลิขสิทธิ์</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">เวอร์ชัน 1.0.0</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS & Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

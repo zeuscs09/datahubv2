@@ -34,12 +34,6 @@ class IC360Processor:
             nl_ks_contact_data = transform_nl_ks_contact_for_ic360(profile_data)
             address_data = transform_address_for_ic360(profile_data)
             
-            # แปลงค่าว่างเป็น None สำหรับฟิลด์ที่เป็น integer
-            for data_dict in [contact_data, line_info_data, email_data, mobile_data, nl_ks_contact_data, address_data]:
-                for key in data_dict:
-                    if data_dict[key] == '':
-                        data_dict[key] = None
-            
             # เชื่อมต่อ IC360 database
             if not self.client.connect():
                 return {"status": "error", "message": "Failed to connect to IC360 database"}
@@ -202,14 +196,14 @@ class IC360Processor:
                 self.client.execute_query(insert_nl_query, nl_ks_contact_data)
             
             # อัพเดทข้อมูลที่อยู่
-            if address_data.get("addr_1") or address_data.get("state_code"):
+            if address_data.get("address_type"):
                 check_addr_query = """
                     SELECT contact_id 
                     FROM ks_contact_addr_dtl 
                     WHERE contact_id = %(contact_id)s
-                    AND address_type = 'HOME'
+                    AND address_type = %(address_type)s
                 """
-                check_addr_params = {"contact_id": address_data.get("contact_id")}
+                check_addr_params = {"contact_id": address_data.get("contact_id"), "address_type": address_data.get("address_type")}
                 check_addr_result = self.client.execute_query(check_addr_query, check_addr_params)
                 
                 if check_addr_result and len(check_addr_result) > 0:
@@ -220,11 +214,10 @@ class IC360Processor:
                             sub_district = %(sub_district)s,
                             city = %(city)s,
                             state_code = %(state_code)s,
-                            postal_code = %(postal_code)s,
-                            country_code = 'TH',
+                            country_code = %(country_code)s,
                             last_upd_dt = NOW()
                         WHERE contact_id = %(contact_id)s
-                        AND address_type = 'HOME'
+                        AND address_type = %(address_type)s
                     """
                     self.client.execute_query(update_addr_query, address_data)
                 else:
@@ -232,22 +225,20 @@ class IC360Processor:
                     insert_addr_query = """
                         INSERT INTO ks_contact_addr_dtl (
                             contact_id, address_type, addr_1,
-                            sub_district, city, state_code,
-                            postal_code, country_code,
-                            create_dt, last_upd_dt, addr_seq_no
+                            sub_district, city, state_code, country_code,
+                            create_dt, last_upd_dt
                         ) VALUES (
-                            %(contact_id)s, 'HOME', %(addr_1)s,
-                            %(sub_district)s, %(city)s, %(state_code)s,
-                            %(postal_code)s, 'TH',
-                            NOW(), NOW(), 1
+                            %(contact_id)s, %(address_type)s, %(addr_1)s,
+                            %(sub_district)s, %(city)s, %(state_code)s, %(country_code)s,
+                            NOW(), NOW()
                         )
                     """
                     self.client.execute_query(insert_addr_query, address_data)
-                    
+                
             result = {"status": "success", "message": "IC360 profile updated successfully"}
                 
         except Exception as e:
-            frappe.log_error(message=f"IC360 update error: {str(e)}", title="IC360 Update Error")
+            frappe.log_error(message=f"IC360 profile update error: {str(e)}", title="IC360 Profile Update Error")
             result = {"status": "error", "message": str(e)}
             
         finally:
@@ -266,12 +257,6 @@ class IC360Processor:
             # แปลงข้อมูลสำหรับการอัพเดท
             child_ic360_data = transform_child_for_ic360(child_data)
             child_moreinfo_data = transform_child_moreinfo_for_ic360(child_data)
-            
-            # แปลงค่าว่างเป็น None สำหรับฟิลด์ที่เป็น integer
-            for data_dict in [child_ic360_data, child_moreinfo_data]:
-                for key in data_dict:
-                    if data_dict[key] == '':
-                        data_dict[key] = None
             
             # เชื่อมต่อ IC360 database
             if not self.client.connect():
@@ -331,28 +316,18 @@ class IC360Processor:
             check_moreinfo_params = {"cusid": child_moreinfo_data.get("cusid")}
             check_moreinfo_result = self.client.execute_query(check_moreinfo_query, check_moreinfo_params)
             
-            # ตรวจสอบ pc_code ที่มีอยู่
             if check_moreinfo_result and len(check_moreinfo_result) > 0:
-                # ดึงค่า pc_code ที่มีอยู่
-                pc_code_query = "SELECT pc_code FROM nl_customer_moreinfo WHERE cusid = %(cusid)s"
-                pc_code_params = {"cusid": child_moreinfo_data.get("cusid")}
-                pc_code_result = self.client.execute_query(pc_code_query, pc_code_params)
-                existing_pc_code = pc_code_result[0].get("pc_code") if pc_code_result else None
-                
-                # รักษาค่า pc_code เดิมถ้ามี
-                if existing_pc_code and not child_moreinfo_data.get("pc_code"):
-                    child_moreinfo_data["pc_code"] = existing_pc_code
-                
                 # อัพเดทข้อมูลเพิ่มเติมที่มีอยู่แล้ว
                 update_moreinfo_query = """
                     UPDATE nl_customer_moreinfo 
-                    SET born_place_id = %(born_place_id)s,
+                    SET motherid = %(motherid)s,
+                        born_place_id = %(born_place_id)s,
                         born_place_type = %(born_place_type)s,
                         birth_plan = %(birth_plan)s,
                         mother_prod_id = %(mother_prod_id)s,
                         current_mother_prod_id = %(current_mother_prod_id)s,
                         pc_code = %(pc_code)s,
-                        motherid = %(motherid)s
+                        mother_stage = %(mother_stage)s
                     WHERE cusid = %(cusid)s
                 """
                 self.client.execute_query(update_moreinfo_query, child_moreinfo_data)
@@ -362,11 +337,11 @@ class IC360Processor:
                     INSERT INTO nl_customer_moreinfo (
                         cusid, motherid, born_place_id, born_place_type,
                         birth_plan, mother_prod_id, current_mother_prod_id,
-                        pc_code
+                        pc_code, mother_stage
                     ) VALUES (
                         %(cusid)s, %(motherid)s, %(born_place_id)s, %(born_place_type)s,
                         %(birth_plan)s, %(mother_prod_id)s, %(current_mother_prod_id)s,
-                        %(pc_code)s
+                        %(pc_code)s, %(mother_stage)s
                     )
                 """
                 self.client.execute_query(insert_moreinfo_query, child_moreinfo_data)
@@ -398,11 +373,6 @@ class IC360Processor:
             if consent_data.get("consent_type") == "MARKETING":
                 # สร้างข้อมูลสำหรับความยินยอมทางการตลาด
                 consent_ic360_data = transform_marketing_consent_for_ic360(consent_data)
-                
-                # แปลงค่าว่างเป็น None สำหรับฟิลด์ที่เป็น integer
-                for key in consent_ic360_data:
-                    if consent_ic360_data[key] == '':
-                        consent_ic360_data[key] = None
                 
                 # ตรวจสอบว่ามีข้อมูลความยินยอมทางการตลาดอยู่แล้วหรือไม่
                 check_query = """
@@ -444,32 +414,27 @@ class IC360Processor:
                     """
                     self.client.execute_query(insert_query, consent_ic360_data)
                     
-            else:  # PRIVACY
-                # สร้างข้อมูลสำหรับความยินยอมข้อมูลส่วนบุคคล
+                result = {"status": "success", "message": "IC360 marketing consent updated successfully"}
+                    
+            elif consent_data.get("consent_type") == "PRIVACY":
+                # สร้างข้อมูลสำหรับความยินยอมนโยบายความเป็นส่วนตัว
                 consent_ic360_data = transform_primary_consent_for_ic360(consent_data)
             
-                # แปลงค่าว่างเป็น None สำหรับฟิลด์ที่เป็น integer
-                for key in consent_ic360_data:
-                    if consent_ic360_data[key] == '':
-                        consent_ic360_data[key] = None
-            
-                # ตรวจสอบว่ามีข้อมูลความยินยอมข้อมูลส่วนบุคคลอยู่แล้วหรือไม่
+                # ตรวจสอบว่ามีข้อมูลความยินยอมนโยบายความเป็นส่วนตัวอยู่แล้วหรือไม่
                 check_query = """
                     SELECT contact_id 
                     FROM nl_primary_consent 
                     WHERE contact_id = %(contact_id)s
-                    AND register_dt = %(register_dt)s
                     AND channel = %(channel)s
                 """
                 check_params = {
                     "contact_id": consent_ic360_data.get("contact_id"),
-                    "register_dt": consent_ic360_data.get("register_dt"),
                     "channel": consent_ic360_data.get("channel")
                 }
                 check_result = self.client.execute_query(check_query, check_params)
                 
                 if check_result and len(check_result) > 0:
-                    # อัพเดทความยินยอมข้อมูลส่วนบุคคลที่มีอยู่แล้ว
+                    # อัพเดทความยินยอมนโยบายความเป็นส่วนตัวที่มีอยู่แล้ว
                     update_query = """
                         UPDATE nl_primary_consent 
                         SET consent_privacy_13y = %(consent_privacy_13y)s,
@@ -477,26 +442,28 @@ class IC360Processor:
                             consent_version = %(consent_version)s,
                             last_upd_dt = NOW()
                         WHERE contact_id = %(contact_id)s
-                        AND register_dt = %(register_dt)s
                         AND channel = %(channel)s
                     """
                     self.client.execute_query(update_query, consent_ic360_data)
                 else:
-                    # เพิ่มความยินยอมข้อมูลส่วนบุคคลใหม่
+                    # เพิ่มความยินยอมนโยบายความเป็นส่วนตัวใหม่
                     insert_query = """
                         INSERT INTO nl_primary_consent (
                             contact_id, register_dt, channel,
-                            consent_privacy_13y, privacy_13y_dt,
-                            consent_version, create_dt, last_upd_dt
+                            consent_privacy_13y, privacy_13y_dt, consent_version,
+                            create_dt, last_upd_dt
                         ) VALUES (
-                            %(contact_id)s, %(register_dt)s, %(channel)s,
-                            %(consent_privacy_13y)s, %(privacy_13y_dt)s,
-                            %(consent_version)s, NOW(), NOW()
+                            %(contact_id)s, NOW(), %(channel)s,
+                            %(consent_privacy_13y)s, %(privacy_13y_dt)s, %(consent_version)s,
+                            NOW(), NOW()
                         )
                     """
                     self.client.execute_query(insert_query, consent_ic360_data)
                     
-            result = {"status": "success", "message": "IC360 consent updated successfully"}
+                result = {"status": "success", "message": "IC360 privacy consent updated successfully"}
+                
+            else:
+                result = {"status": "error", "message": "Unknown consent type"}
                 
         except Exception as e:
             frappe.log_error(message=f"IC360 consent update error: {str(e)}", title="IC360 Consent Update Error")
@@ -517,11 +484,6 @@ class IC360Processor:
             
             # แปลงข้อมูลสำหรับการอัพเดท
             campaign_ic360_data = transform_campaign_for_ic360(campaign_data)
-            
-            # แปลงค่าว่างเป็น None สำหรับฟิลด์ที่เป็น integer
-            for key in campaign_ic360_data:
-                if campaign_ic360_data[key] == '':
-                    campaign_ic360_data[key] = None
             
             # เชื่อมต่อ IC360 database
             if not self.client.connect():

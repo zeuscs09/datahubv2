@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | DataHub</title>
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Google Fonts Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/dh_profile_mom/style.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Kanit', sans-serif;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #ff91a4 0%, #ff7eb3 100%);
+            color: white;
+            padding: 2rem 0;
+            border-radius: 0 0 20px 20px;
+            margin-bottom: 2rem;
+        }
+        .profile-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+            border: none;
+        }
+        .card-header {
+            background-color: #fff;
+            border-bottom: 2px solid #f1f1f1;
+            font-weight: 600;
+            border-radius: 15px 15px 0 0 !important;
+        }
+        .child-card {
+            border-left: 4px solid #8e44ad;
+        }
+        .consent-badge {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.6rem;
+        }
+        .campaign-item {
+            border-left: 4px solid #3498db;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        .campaign-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        .timeline:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background-color: #e0e0e0;
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+        .timeline-item:before {
+            content: '';
+            position: absolute;
+            left: -35px;
+            top: 0;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background-color: #ff7eb3;
+            border: 2px solid white;
+            z-index: 1;
+        }
+        .nav-tabs .nav-link.active {
+            border-bottom: 3px solid #ff7eb3;
+            color: #ff7eb3;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background-color: #ff7eb3;
+            border-color: #ff7eb3;
+        }
+        .btn-primary:hover {
+            background-color: #ff91a4;
+            border-color: #ff91a4;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    {% include "templates/includes/navbar.html" %}
+
+    <div class="container-fluid px-0">
+        <div class="profile-header text-center">
+           
+            <h2 class="mb-1">{{ doc.first_name }} {{ doc.last_name }}</h2>
+            <p class="mb-0">
+                <i class="fas fa-id-card me-2"></i>{{ doc.contact_id }}
+                {% if doc.is_consented == "Yes" %}
+                <span class="badge bg-success ms-2">อนุญาตการตลาด</span>
+                {% else %}
+                <span class="badge bg-secondary ms-2">ไม่อนุญาตการตลาด</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="container fade-in">
+        <ul class="nav nav-tabs mb-4" id="profileTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">
+                    <i class="fas fa-user me-2"></i>ข้อมูลทั่วไป
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="children-tab" data-bs-toggle="tab" data-bs-target="#children" type="button" role="tab" aria-controls="children" aria-selected="false">
+                    <i class="fas fa-baby me-2"></i>ข้อมูลบุตร
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="campaigns-tab" data-bs-toggle="tab" data-bs-target="#campaigns" type="button" role="tab" aria-controls="campaigns" aria-selected="false">
+                    <i class="fas fa-bullhorn me-2"></i>แคมเปญ
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="consents-tab" data-bs-toggle="tab" data-bs-target="#consents" type="button" role="tab" aria-controls="consents" aria-selected="false">
+                    <i class="fas fa-clipboard-check me-2"></i>การยินยอม
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="profileTabContent">
+            <!-- ข้อมูลทั่วไป -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-address-card me-2"></i>ข้อมูลส่วนตัว</span>
+                                <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-4 text-muted">ชื่อ-นามสกุล</div>
+                                    <div class="col-sm-8">{{ doc.first_name }} {{ doc.last_name }}</div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-4 text-muted">รหัสประจำตัว</div>
+                                    <div class="col-sm-8">{{ doc.uid }}</div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-4 text-muted">เพศ</div>
+                                    <div class="col-sm-8">
+                                        {% if doc.gender == "F" %}
+                                        หญิง
+                                        {% elif doc.gender == "M" %}
+                                        ชาย
+                                        {% else %}
+                                        ไม่ระบุ
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4 text-muted">วันเกิด</div>
+                                    <div class="col-sm-8">{{ doc.birth_date }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-phone-alt me-2"></i>ข้อมูลติดต่อ</span>
+                                <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-4 text-muted">โทรศัพท์</div>
+                                    <div class="col-sm-8">{{ doc.phone }}</div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-4 text-muted">อีเมล</div>
+                                    <div class="col-sm-8">{{ doc.email or "-" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4 text-muted">LINE ID</div>
+                                    <div class="col-sm-8">{{ doc.line_mid or "-" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-map-marker-alt me-2"></i>ที่อยู่</span>
+                                <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-2 text-muted">ที่อยู่</div>
+                                    <div class="col-sm-10">{{ doc.address or "-" }}</div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-2 text-muted">ตำบล/แขวง</div>
+                                    <div class="col-sm-4">{{ doc.sub_district_name or "-" }}</div>
+                                    <div class="col-sm-2 text-muted">อำเภอ/เขต</div>
+                                    <div class="col-sm-4">{{ doc.amphur_name or "-" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-2 text-muted">จังหวัด</div>
+                                    <div class="col-sm-4">{{ doc.province_name or "-" }}</div>
+                                    <div class="col-sm-2 text-muted">รหัสไปรษณีย์</div>
+                                    <div class="col-sm-4">{{ doc.postal_code or "-" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <i class="fas fa-info-circle me-2"></i>ข้อมูลเพิ่มเติม
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-4 text-muted">แหล่งที่มา</div>
+                                    <div class="col-sm-8">{{ doc.contact_source or "-" }}</div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-4 text-muted">รายได้</div>
+                                    <div class="col-sm-8">{{ doc.income or "-" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4 text-muted">แบรนด์</div>
+                                    <div class="col-sm-8">{{ doc.brand or "-" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <i class="fas fa-heartbeat me-2"></i>ข้อมูลการตั้งครรภ์
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-4 text-muted">โรงพยาบาล</div>
+                                    <div class="col-sm-8">{{ doc.gg_hospital or "-" }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4 text-muted">วิธีคลอด</div>
+                                    <div class="col-sm-8">{{ doc.gg_child_delivery_type or "-" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ข้อมูลบุตร -->
+            <div class="tab-pane fade" id="children" role="tabpanel" aria-labelledby="children-tab">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4>บุตรทั้งหมด</h4>
+                    <button class="btn btn-primary btn-sm"><i class="fas fa-plus me-2"></i>เพิ่มข้อมูลบุตร</button>
+                </div>
+
+                {% if children %}
+                    {% for child in children %}
+                    <div class="card child-card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>
+                                <i class="fas fa-baby me-2"></i>{{ child.fname }} {{ child.lname }}
+                                {% if child.nname %}
+                                ({{ child.nname }})
+                                {% endif %}
+                            </span>
+                            <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 text-muted">รหัสประจำตัว</div>
+                                        <div class="col-sm-8">{{ child.cusid }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 text-muted">เพศ</div>
+                                        <div class="col-sm-8">
+                                            {% if child.gender == "F" %}
+                                            หญิง
+                                            {% elif child.gender == "M" %}
+                                            ชาย
+                                            {% else %}
+                                            ไม่ระบุ
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 text-muted">วันเกิด</div>
+                                        <div class="col-sm-8">{{ child.birthdate }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 text-muted">โรงพยาบาล</div>
+                                        <div class="col-sm-8">{{ child.gg_hospital or "-" }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 text-muted">วิธีคลอด</div>
+                                        <div class="col-sm-8">{{ child.gg_child_delivery_type or "-" }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 text-muted">นมปัจจุบัน</div>
+                                        <div class="col-sm-8">{{ child.gg_milk_currently_consuming or "-" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> ยังไม่มีข้อมูลบุตร
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- แคมเปญ -->
+            <div class="tab-pane fade" id="campaigns" role="tabpanel" aria-labelledby="campaigns-tab">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4>แคมเปญทั้งหมด</h4>
+                    <button class="btn btn-primary btn-sm"><i class="fas fa-plus me-2"></i>เพิ่มแคมเปญ</button>
+                </div>
+
+                {% if campaigns %}
+                    {% for campaign in campaigns %}
+                    <div class="card campaign-item">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="mb-0">{{ campaign.campaign_name }}</h5>
+                                <span class="badge bg-{{ 'success' if campaign.campaign_status == 'Active' else 'secondary' }}">
+                                    {{ campaign.campaign_status }}
+                                </span>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 text-muted">Application Code</div>
+                                        <div class="col-sm-8">{{ campaign.application_code or "assessment" }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 text-muted">Internal ID</div>
+                                        <div class="col-sm-8">{{ campaign.internal_id or "campaign" }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 text-muted">Internal Alternate ID</div>
+                                        <div class="col-sm-8">{{ campaign.internal_alternate_id or "pregnancy" }}</div>
+                                    </div>
+                                 
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 text-muted">ประเภท</div>
+                                        <div class="col-sm-8">{{ campaign.campaign_type or "-" }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 text-muted">วันที่สร้าง</div>
+                                        <div class="col-sm-8">{{ campaign.create_date or "15-01-2025 18:00:45" }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 text-muted">โซนเวลา</div>
+                                        <div class="col-sm-8">{{ campaign.timezone or "Asia/Bangkok" }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 text-muted">อัปเดตล่าสุด</div>
+                                        <div class="col-sm-8">{{ campaign.update_date or "15-01-2025 18:00:45" }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 text-muted">วันเริ่มต้น</div>
+                                        <div class="col-sm-8">{{ campaign.campaign_start_date or "-" }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 text-muted">วันสิ้นสุด</div>
+                                        <div class="col-sm-8">{{ campaign.campaign_end_date or "-" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> ยังไม่มีแคมเปญ
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- การยินยอม -->
+            <div class="tab-pane fade" id="consents" role="tabpanel" aria-labelledby="consents-tab">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4>ประวัติการยินยอม</h4>
+                    <button class="btn btn-primary btn-sm"><i class="fas fa-plus me-2"></i>เพิ่มการยินยอม</button>
+                </div>
+
+                <div class="timeline">
+                    {% if consents %}
+                        {% for consent in consents %}
+                        <div class="timeline-item">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0">
+                                            การยินยอม{{ "การตลาด" if consent.consent_type == "MARKETING" else "ความเป็นส่วนตัว" }}
+                                            <span class="badge consent-badge bg-{{ 'success' if consent.is_consented == 'Yes' else 'secondary' }}">
+                                                {{ "ยินยอม" if consent.is_consented == "Yes" else "ไม่ยินยอม" }}
+                                            </span>
+                                        </h6>
+                                        <small class="text-muted">{{ consent.consent_date }}</small>
+                                    </div>
+                                    <p class="mb-0">{{ consent.consent_description or "ไม่มีคำอธิบายเพิ่มเติม" }}</p>
+                                    {% if consent.consent_notes %}
+                                    <small class="text-muted d-block mt-2">หมายเหตุ: {{ consent.consent_notes }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> ยังไม่มีประวัติการยินยอม
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white py-4 mt-5 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; 2024 DataHub. สงวนลิขสิทธิ์</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">เวอร์ชัน 1.0.0</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS & Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+/* สไตล์เพิ่มเติมสำหรับหน้าข้อมูลคุณแม่ */
+
+/* ฟอนต์ */
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+
+/* สไตล์พื้นฐาน */
+body {
+    font-family: 'Kanit', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* Animation เมื่อโหลดหน้า */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* สไตล์สำหรับแท็บ */
+.nav-tabs {
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #666;
+    padding: 12px 15px;
+    border-radius: 0;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #ff7eb3;
+    background-color: rgba(255, 126, 179, 0.05);
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom: 3px solid #ff7eb3;
+    color: #ff7eb3;
+    font-weight: 600;
+    background-color: transparent;
+}
+
+/* ปรับแต่ง Card */
+.card {
+    transition: all 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* ปรับแต่งปุ่ม */
+.btn {
+    border-radius: 30px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 500;
+    text-transform: none;
+    transition: all 0.3s;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.7rem;
+}
+
+.btn-outline-primary {
+    color: #ff7eb3;
+    border-color: #ff7eb3;
+}
+
+.btn-outline-primary:hover {
+    background-color: #ff7eb3;
+    border-color: #ff7eb3;
+    color: white;
+}
+
+/* การแสดงผลบนมือถือ */
+@media (max-width: 767.98px) {
+    .profile-header {
+        padding: 1.5rem 0;
+    }
+    
+    .profile-img {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .nav-tabs .nav-link {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+    
+    .card-header {
+        padding: 0.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .row > [class*="col-"] {
+        margin-bottom: 15px;
+    }
+}
+
+/* แสดงข้อมูลในแบบแนวตั้งบนมือถือ */
+@media (max-width: 575.98px) {
+    .row .text-muted {
+        margin-bottom: 0.2rem;
+        font-weight: 500;
+    }
+    
+    .row > div {
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+    }
+} 

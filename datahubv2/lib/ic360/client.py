@@ -54,6 +54,17 @@ class IC360Client:
                 
             cursor = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             
+            # แปลงค่าว่างเป็น None สำหรับฟิลด์ที่เป็น integer
+            if params:
+                # สำหรับ dict parameters
+                if isinstance(params, dict):
+                    for key, value in params.items():
+                        if value == '':
+                            params[key] = None
+                # สำหรับ list parameters
+                elif isinstance(params, list):
+                    params = [None if x == '' else x for x in params]
+            
             # ตรวจสอบประเภทของพารามิเตอร์และดำเนินการตามความเหมาะสม
             if params is None:
                 cursor.execute(query)
@@ -63,7 +74,7 @@ class IC360Client:
                 cursor.execute(query, params)
             else:
                 # แปลงเป็นลิสต์หากไม่ใช่ dict หรือ list
-                cursor.execute(query, [params])
+                cursor.execute(query, [None if params == '' else params])
             
             if query.strip().upper().startswith('SELECT'):
                 results = cursor.fetchall()
@@ -107,10 +118,14 @@ class IC360Client:
             FROM
                 ks_province
             WHERE 
-                province_name = %s
-                AND amphur_name = %s
-                AND district_name = %s
+                province_name = %(province_name)s
+                AND amphur_name = %(amphur_name)s
+                AND district_name = %(district_name)s
             LIMIT 1
         """
-        params = [province_name, amphur_name, district_name]
+        params = {
+            "province_name": province_name,
+            "amphur_name": amphur_name,
+            "district_name": district_name
+        }
         return self.execute_query(query, params) 

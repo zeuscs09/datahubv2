@@ -100,12 +100,12 @@ class DataHubProcessor:
             child_profile.gg_child_delivery_type = get_lookup_data("IC360", "NL_BIRTH_PLAN", child_profile.birth_plan)
             child_profile.gg_hospital = get_lookup_data("IC360", "NL_ANC_PLACE", child_profile.born_place_type)
             child_profile.child_birthdatereliability = get_lookup_data("IC360", "NL_MOTHERSTAGE", child_profile.mother_stage)
-           
+       
             if child_profile.lastpro and child_profile.lastformula:
                 lastpro_key = child_profile.lastpro + "-" + child_profile.lastformula
-                child_profile.gg_milk_currently_consuming = get_lookup_formula("IC360", lastpro_key)
+        child_profile.gg_milk_currently_consuming = get_lookup_formula("IC360", lastpro_key)
             
-            child_profile.save(ignore_permissions=True)
+        child_profile.save(ignore_permissions=True)
     def sync_from_webhook(self, webhook_doc,sync_type="MANUAL"):
         """ซิงค์ข้อมูลจาก webhook inbound"""
         try:
