@@ -80,8 +80,8 @@ class DataHubProcessor:
                 lookup_formula = get_lookup_formula("SD", child_profile.gg_milk_currently_consuming) #last formula
                 
                 if lookup_formula and lookup_formula.value:
-                    child_profile.lastpro_key = lookup_formula.value
-                    prod_formula = child_profile.lastpro_key.split("-")
+                    lastpro = lookup_formula.value
+                    prod_formula = lastpro.split("-")
                     child_profile.lastpro = prod_formula[0]
                     child_profile.lastformula = prod_formula[1]
                     formula_desc = get_lookup_formula("IC360", prod_formula[0])
