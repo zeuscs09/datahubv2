@@ -30,7 +30,7 @@ frappe.ui.form.on('DH Webhook Inbound', {
                 frappe.call({
                     freeze: true,
                     freeze_message: __('Syncing webhook...'),
-                    method: 'datahubv2.datahubv2.doctype.dh_webhook_inbound.dh_webhook_inbound.sync_webhook',
+                    method: 'datahubv2.api.v1.inbound.sync_webhook',
                     args: {
                         inbound_id: frm.doc.inbound_id
                     },

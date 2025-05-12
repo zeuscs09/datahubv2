@@ -13,7 +13,7 @@ from ..transformer import (
     transform_campaign_for_ic360
 )
 from ...lib.ic360.client import IC360Client
-from ...core.processor import update_sd_lookup
+from ...core.lookup import update_sd_lookup
 
 class IC360Processor:
     def __init__(self, parent_processor):

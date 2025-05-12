@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 import json
 from datetime import datetime
-
+from datahubv2.core.processor import DataHubProcessor
 @frappe.whitelist()
 def profile():
     """Receive profile data via webhook"""
@@ -72,3 +72,11 @@ def profile():
             "message": str(e)
         }
 
+@frappe.whitelist()
+def sync_webhook(inbound_id):
+    webhook = frappe.get_doc("DH Webhook Inbound", {"inbound_id": inbound_id})
+    if webhook:
+        processor = DataHubProcessor()
+        processor.sync_from_webhook(webhook)
+        return True
+    return False
