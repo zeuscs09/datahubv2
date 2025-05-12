@@ -54,7 +54,7 @@ class IC360Processor:
                         birth_date = %(birth_date)s,
                         contact_source = %(contact_source)s,
                         last_upd_dt = NOW(),
-                        is_active = %(status)s,
+                        is_active = %(is_active)s,
                         income = %(income)s
                     WHERE contact_id = %(contact_id)s
                 """
@@ -67,7 +67,7 @@ class IC360Processor:
                         birth_date, contact_source, create_dt, last_upd_dt,is_active,income
                     ) VALUES (
                         %(contact_id)s, %(first_name)s, %(last_name)s, %(gender)s,
-                        %(birth_date)s, %(contact_source)s, NOW(), NOW(),%(status)s,%(income)s
+                        %(birth_date)s, %(contact_source)s, NOW(), NOW(),%(is_active)s,%(income)s
                     )
                 """
                 self.client.execute_query(insert_query, contact_data)
@@ -262,7 +262,7 @@ class IC360Processor:
             child_ic360_data = transform_child_for_ic360(child_data)
           
             child_moreinfo_data = transform_child_moreinfo_for_ic360(child_data)
-            main_profile = frappe.get_doc("Main Profile", child_data.get("motherid"))
+            main_profile = frappe.get_doc("ETL Main Profile", child_data.get("motherid"))
             child_moreinfo_data["sourceid"] = main_profile.get("sourceid")
             child_ic360_data["sourceid"] = main_profile.get("sourceid")
             # เชื่อมต่อ IC360 database
