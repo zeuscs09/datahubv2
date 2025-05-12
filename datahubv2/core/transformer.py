@@ -64,6 +64,8 @@ def transform_child_data(data, parent_id=None):
         "mother_prod_id": data.get("old_mother_prod"),
         "current_mother_prod_id": data.get("current_mother_prod"),
         
+      
+        
         # Default values ตามที่ระบุในเอกสาร
         # "gender": "None",
         # "flag_complete": "C",
@@ -73,7 +75,7 @@ def transform_child_data(data, parent_id=None):
         # "updateid": "0",
         # "createdate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         # "updatedate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        # "receivedate": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+         "receivedate": data.get("child_add_date")
     }
 
 def transform_campaign_data(data, parent_id=None):
@@ -163,7 +165,9 @@ def transform_contact_for_ic360(profile_data):
         "gender": profile_data.get("gender") or "None",
         "birth_date": profile_data.get("birth_date") or "2000-01-01",
         "contact_source": profile_data.get("contact_source") or "BA",
-        "last_upd_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "last_upd_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "is_active": profile_data.get("status") or "1",
+        "income": profile_data.get("income") or "0",
     }
 
 def transform_line_info_for_ic360(profile_data):
@@ -271,7 +275,7 @@ def transform_marketing_consent_for_ic360(consent_data):
         "consent_marketing": consent_data.get("is_consented") or "No",
         "consent_marketing_dt": consent_data.get("consent_date") or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "consent_version": consent_data.get("consent_version") or "1",
-        "last_upd_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "last_upd_dt":  consent_data.get("last_updated")
     }
 
 def transform_primary_consent_for_ic360(consent_data):
@@ -283,7 +287,7 @@ def transform_primary_consent_for_ic360(consent_data):
         "consent_privacy_13y": consent_data.get("is_consented") or "No",
         "privacy_13y_dt": consent_data.get("consent_date") or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "consent_version": consent_data.get("consent_version") or "1",
-        "last_upd_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "last_upd_dt": consent_data.get("last_updated")
     }
 
 def transform_campaign_for_ic360(campaign_data):

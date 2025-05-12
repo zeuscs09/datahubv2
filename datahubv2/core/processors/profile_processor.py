@@ -33,6 +33,7 @@ class ProfileProcessor:
             # สร้างโปรไฟล์ใหม่
             profile_id = Helper.generate_code(14)
             profile_data["contact_id"] = profile_id
+            profile_data["contact_type"] = "09"
             profile_result = self.create_profile(profile_data)
             
         return  profile_result

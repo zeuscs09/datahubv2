@@ -16,6 +16,7 @@
   "gender",
   "gender_sd",
   "birth_date",
+  "contact_type",
   "contact_info",
   "phone",
   "column_break_kzku",
@@ -303,11 +304,16 @@
   {
    "fieldname": "column_break_pgwr",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contact_type",
+   "fieldtype": "Data",
+   "label": "Contact Type"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-04 13:23:09.328150",
+ "modified": "2025-05-12 12:22:59.752007",
  "modified_by": "Administrator",
  "module": "Datahubv2",
  "name": "ETL Main Profile",

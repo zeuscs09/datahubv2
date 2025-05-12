@@ -1,0 +1,160 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-03-21 10:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info",
+  "outbound_id",
+  "column_break_zigf",
+  "profile_id",
+  "sent_to",
+  "section_break_oqtz",
+  "webhook_url",
+  "payload",
+  "headers",
+  "status",
+  "response_code",
+  "response_body",
+  "error_message",
+  "retry_count",
+  "timestamps",
+  "created_at",
+  "sent_at",
+  "completed_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info",
+   "fieldtype": "Section Break",
+   "label": "Basic Information"
+  },
+  {
+   "description": "รหัส outbound (Auto)",
+   "fieldname": "outbound_id",
+   "fieldtype": "Data",
+   "label": "Outbound ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_zigf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Link to ETL Main Profile",
+   "fieldname": "profile_id",
+   "fieldtype": "Link",
+   "label": "Profile ID",
+   "options": "ETL Main Profile"
+  },
+  {
+   "description": "ระบบปลายทาง (เช่น \"CRM\", \"Marketing\", \"Analytics\")",
+   "fieldname": "sent_to",
+   "fieldtype": "Data",
+   "label": "Sent To"
+  },
+  {
+   "fieldname": "section_break_oqtz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "URL ปลายทาง",
+   "fieldname": "webhook_url",
+   "fieldtype": "Data",
+   "label": "Webhook URL"
+  },
+  {
+   "description": "ข้อมูลที่ส่ง (JSON)",
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "Payload",
+   "options": "JSON"
+  },
+  {
+   "description": "HTTP Headers (JSON)",
+   "fieldname": "headers",
+   "fieldtype": "Code",
+   "label": "Headers",
+   "options": "JSON"
+  },
+  {
+   "description": "สถานะ (Pending/Sent/Failed)",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nPending\nSent\nFailed"
+  },
+  {
+   "description": "HTTP Response Code",
+   "fieldname": "response_code",
+   "fieldtype": "Data",
+   "label": "Response Code"
+  },
+  {
+   "description": "Response จากปลายทาง (JSON)",
+   "fieldname": "response_body",
+   "fieldtype": "Code",
+   "label": "Response Body",
+   "options": "JSON"
+  },
+  {
+   "description": "ข้อความข้อผิดพลาด",
+   "fieldname": "error_message",
+   "fieldtype": "Text",
+   "label": "Error Message"
+  },
+  {
+   "description": "จำนวนครั้งที่ retry",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count"
+  },
+  {
+   "fieldname": "timestamps",
+   "fieldtype": "Section Break",
+   "label": "Timestamps"
+  },
+  {
+   "description": "เวลาที่สร้าง",
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At"
+  },
+  {
+   "description": "เวลาที่ส่ง",
+   "fieldname": "sent_at",
+   "fieldtype": "Datetime",
+   "label": "Sent At"
+  },
+  {
+   "description": "เวลาที่เสร็จสิ้น",
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-03-21 10:00:00",
+ "modified_by": "Administrator",
+ "module": "Datahubv2",
+ "name": "DH Webhook Outbound",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+} 
