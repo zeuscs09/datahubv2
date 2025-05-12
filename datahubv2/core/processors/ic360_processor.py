@@ -501,7 +501,8 @@ class IC360Processor:
             
             # แปลงข้อมูลสำหรับการอัพเดท
             campaign_ic360_data = transform_campaign_for_ic360(campaign_data)
-            
+            if not campaign_ic360_data.get("internal_alternate_id"):
+                campaign_ic360_data["internal_alternate_id"] = ""
             # เชื่อมต่อ IC360 database
             if not self.client.connect():
                 return {"status": "error", "message": "Failed to connect to IC360 database"}
