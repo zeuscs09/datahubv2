@@ -10,7 +10,7 @@ def transform_profile_data(data):
         "last_name": data.get("lastname"),
         "gender_sd": data.get("gender"),
         "birth_date": data.get("mom_birthdate"),
-        
+       
         # Contact Info
         "phone": data.get("phonenumber"),
         "email": data.get("email"),
@@ -168,6 +168,7 @@ def transform_contact_for_ic360(profile_data):
         "last_upd_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "is_active": profile_data.get("status") or "1",
         "income": profile_data.get("income") or "0",
+        "contact_type": profile_data.get("contact_type") or "09"
     }
 
 def transform_line_info_for_ic360(profile_data):

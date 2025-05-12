@@ -55,7 +55,8 @@ class IC360Processor:
                         contact_source = %(contact_source)s,
                         last_upd_dt = NOW(),
                         is_active = %(is_active)s,
-                        income = %(income)s
+                        income = %(income)s,
+                        contact_type = %(contact_type)s
                     WHERE contact_id = %(contact_id)s
                 """
                 self.client.execute_query(update_query, contact_data)
@@ -64,10 +65,10 @@ class IC360Processor:
                 insert_query = """
                     INSERT INTO ks_contact (
                         contact_id, first_name, last_name, gender,
-                        birth_date, contact_source, create_dt, last_upd_dt,is_active,income
+                        birth_date, contact_source, create_dt, last_upd_dt,is_active,income,contact_type
                     ) VALUES (
                         %(contact_id)s, %(first_name)s, %(last_name)s, %(gender)s,
-                        %(birth_date)s, %(contact_source)s, NOW(), NOW(),%(is_active)s,%(income)s
+                        %(birth_date)s, %(contact_source)s, NOW(), NOW(),%(is_active)s,%(income)s,%(contact_type)s
                     )
                 """
                 self.client.execute_query(insert_query, contact_data)
