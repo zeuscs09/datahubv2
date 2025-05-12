@@ -244,7 +244,7 @@ class IC360Processor:
                 
         except Exception as e:
             frappe.log_error(message=f"IC360 profile update error: {str(e)}", title="IC360 Profile Update Error")
-            result = {"status": "error", "message": str(e)}
+            raise e
             
         finally:
             # ปิดการเชื่อมต่อ
@@ -310,13 +310,13 @@ class IC360Processor:
                         gender, birthdate, reasonid, reason, remark,
                         signature, createid, createdate, updateid, updatedate,
                         flag_complete, flag_active, firstpro, firstformula,
-                        lastpro, lastformula, receivedate,sourceid,receivedate
+                        lastpro, lastformula, receivedate,sourceid
                     ) VALUES (
                         %(cusid)s, %(motherid)s, %(fname)s, %(lname)s, %(nname)s,
                         %(gender)s, %(birthdate)s, %(reasonid)s, %(reason)s, %(remark)s,
                         %(signature)s, '0', NOW(), '0', NOW(),
                         %(flag_complete)s, %(flag_active)s, %(firstpro)s, %(firstformula)s,
-                        %(lastpro)s, %(lastformula)s, %(receivedate)s,%(sourceid)s,%(receivedate)s
+                        %(lastpro)s, %(lastformula)s, %(receivedate)s,%(sourceid)s
                     )
                 """
                 self.client.execute_query(insert_query, child_ic360_data)
@@ -485,7 +485,7 @@ class IC360Processor:
                 
         except Exception as e:
             frappe.log_error(message=f"IC360 consent update error: {str(e)}", title="IC360 Consent Update Error")
-            result = {"status": "error", "message": str(e)}
+            raise e
             
         finally:
             # ปิดการเชื่อมต่อ
@@ -503,7 +503,8 @@ class IC360Processor:
             # แปลงข้อมูลสำหรับการอัพเดท
             campaign_ic360_data = transform_campaign_for_ic360(campaign_data)
             if not campaign_ic360_data.get("internal_alternate_id"):
-                campaign_ic360_data["internal_alternate_id"] = ""
+                campaign_ic360_data["internal_alternate_id"] = "N/A"
+          
             # เชื่อมต่อ IC360 database
             if not self.client.connect():
                 return {"status": "error", "message": "Failed to connect to IC360 database"}
@@ -539,6 +540,7 @@ class IC360Processor:
                 self.client.execute_query(update_query, campaign_ic360_data)
             else:
                 # เพิ่มข้อมูลแคมเปญใหม่
+                
                 insert_query = """
                     INSERT INTO nl_contact_campaign (
                         contact_id, application_code, internal_id,
@@ -554,7 +556,7 @@ class IC360Processor:
                 
         except Exception as e:
             frappe.log_error(message=f"IC360 campaign update error: {str(e)}", title="IC360 Campaign Update Error")
-            result = {"status": "error", "message": str(e)}
+            raise e
             
         finally:
             # ปิดการเชื่อมต่อ
