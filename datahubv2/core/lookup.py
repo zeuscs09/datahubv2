@@ -35,7 +35,7 @@ def update_datahub_lookup(main_profile,child_data):
         child_profile = child_data
         if child_profile:
             child_profile.birth_plan = get_lookup_data("SD","NL_BIRTH_PLAN",child_profile.gg_child_delivery_type)
-            child_profile.born_place_type = get_lookup_data("SD","NL_ANC_PLACE",child_profile.gg_hospital)
+            child_profile.born_place_id = get_lookup_data("SD","NL_ANC_PLACE",child_profile.gg_hospital)
             child_profile.mother_stage = get_lookup_data("SD","NL_MOTHERSTAGE",child_profile.child_birthdatereliability)
             lookup_formula = get_lookup_formula("SD", child_profile.gg_milk_currently_consuming) #last formula
             
@@ -58,7 +58,7 @@ def update_sd_lookup(main_profile, child_profile):
     
     if child_profile:
         child_profile.gg_child_delivery_type = get_lookup_data("IC360", "NL_BIRTH_PLAN", child_profile.birth_plan)
-        child_profile.gg_hospital = get_lookup_data("IC360", "NL_ANC_PLACE", child_profile.born_place_type)
+        child_profile.gg_hospital = get_lookup_data("IC360", "NL_ANC_PLACE", child_profile.born_place_id)
         child_profile.child_birthdatereliability = get_lookup_data("IC360", "NL_MOTHERSTAGE", child_profile.mother_stage)
     
         if child_profile.lastpro and child_profile.lastformula:
