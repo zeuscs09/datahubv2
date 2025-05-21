@@ -274,7 +274,21 @@ class IC360Processor:
             check_query = "SELECT cusid FROM nl_customer WHERE cusid = %(cusid)s"
             check_params = {"cusid": child_ic360_data.get("cusid")}
             check_result = self.client.execute_query(check_query, check_params)
+            get_reasonid_query = """
+            SELECT reasonid
+            FROM nl_reason
+            WHERE reasonth = %(reason)s
+            LIMIT 1
+            """
+            reasonid_result = self.client.execute_query(get_reasonid_query, {"reason": child_ic360_data.get("reason")})
             
+            # ถ้าพบ reasonid ให้อัพเดตใน child_ic360_data
+            if reasonid_result and len(reasonid_result) > 0:
+                child_ic360_data["reasonid"] = reasonid_result[0].get("reasonid")
+                etl_child = frappe.get_doc("ETL Child", child_ic360_data.get("cusid"))
+                etl_child.reasonid = reasonid_result[0].get("reasonid")
+                etl_child.save()
+                
             if check_result and len(check_result) > 0:
                 # อัพเดทข้อมูลเด็กที่มีอยู่แล้ว
                 update_query = """
@@ -320,14 +334,8 @@ class IC360Processor:
                     )
                 """
                 self.client.execute_query(insert_query, child_ic360_data)
-            reasonid_update =f"""
-            UPDATE nl_customer cus
-            SET reasonid = nr.reasonid
-            FROM nl_reason nr
-            WHERE cus.reason = nr.reasonth
-            AND cus.motherid = %(motherid)s;
-                        """
-            self.client.execute_query(reasonid_update, child_ic360_data)
+            # ดึง reasonid จาก nl_reason ตาม reason ที่มีอยู่ก่อน
+          
             # อัพเดทข้อมูลเพิ่มเติมของเด็ก
             check_moreinfo_query = "SELECT cusid FROM nl_customer_moreinfo WHERE cusid = %(cusid)s"
             check_moreinfo_params = {"cusid": child_moreinfo_data.get("cusid")}
@@ -387,11 +395,13 @@ class IC360Processor:
             if not self.client.connect():
                 return {"status": "error", "message": "Failed to connect to IC360 database"}
             
+            profile = frappe.get_doc("ETL Main Profile", consent_data.get("contact_id"))
             # แปลงข้อมูลสำหรับการอัพเดท
             if consent_data.get("consent_type") == "MARKETING":
                 # สร้างข้อมูลสำหรับความยินยอมทางการตลาด
                 consent_ic360_data = transform_marketing_consent_for_ic360(consent_data)
-                
+                consent_ic360_data["register_dt"] = profile.get("date_registration")
+                consent_ic360_data["channel"] = profile.get("sourceid")
                 # ตรวจสอบว่ามีข้อมูลความยินยอมทางการตลาดอยู่แล้วหรือไม่
                 check_query = """
                     SELECT contact_id 
@@ -437,7 +447,8 @@ class IC360Processor:
             elif consent_data.get("consent_type") == "PRIVACY":
                 # สร้างข้อมูลสำหรับความยินยอมนโยบายความเป็นส่วนตัว
                 consent_ic360_data = transform_primary_consent_for_ic360(consent_data)
-            
+                consent_ic360_data["register_dt"] = profile.get("date_registration")
+                consent_ic360_data["channel"] = profile.get("sourceid")
                 # ตรวจสอบว่ามีข้อมูลความยินยอมนโยบายความเป็นส่วนตัวอยู่แล้วหรือไม่
                 check_query = """
                     SELECT contact_id 
@@ -458,6 +469,8 @@ class IC360Processor:
                         SET consent_privacy_13y = %(consent_privacy_13y)s,
                             privacy_13y_dt = %(privacy_13y_dt)s,
                             consent_version = %(consent_version)s,
+                            register_dt = %(register_dt)s,
+                            channel = %(channel)s,
                             last_upd_dt = NOW()
                         WHERE contact_id = %(contact_id)s
                         AND channel = %(channel)s
@@ -471,7 +484,7 @@ class IC360Processor:
                             consent_privacy_13y, privacy_13y_dt, consent_version,
                             create_dt, last_upd_dt
                         ) VALUES (
-                            %(contact_id)s, NOW(), %(channel)s,
+                            %(contact_id)s,%(register_dt)s, %(channel)s,
                             %(consent_privacy_13y)s, %(privacy_13y_dt)s, %(consent_version)s,
                             NOW(), NOW()
                         )
@@ -1187,120 +1200,120 @@ class IC360Processor:
             # ปิดการเชื่อมต่อ
             self.client.disconnect()
 
-    def update_consent(self, consent_data):
-        """อัพเดทข้อมูลความยินยอมใน IC360"""
-        try:
-            # ตรวจสอบความถูกต้องของข้อมูล
-            if not validate_consent_db_update(consent_data):
-                return {"status": "error", "message": "Invalid consent data for IC360 update"}
+    # def update_consent(self, consent_data):
+    #     """อัพเดทข้อมูลความยินยอมใน IC360"""
+    #     try:
+    #         # ตรวจสอบความถูกต้องของข้อมูล
+    #         if not validate_consent_db_update(consent_data):
+    #             return {"status": "error", "message": "Invalid consent data for IC360 update"}
             
-            # เชื่อมต่อ IC360 database
-            if not self.client.connect():
-                return {"status": "error", "message": "Failed to connect to IC360 database"}
+    #         # เชื่อมต่อ IC360 database
+    #         if not self.client.connect():
+    #             return {"status": "error", "message": "Failed to connect to IC360 database"}
             
-            # แปลงข้อมูลสำหรับการอัพเดท
-            if consent_data.get("consent_type") == "MARKETING":
-                # สร้างข้อมูลสำหรับความยินยอมทางการตลาด
-                consent_ic360_data = transform_marketing_consent_for_ic360(consent_data)
+    #         # แปลงข้อมูลสำหรับการอัพเดท
+    #         if consent_data.get("consent_type") == "MARKETING":
+    #             # สร้างข้อมูลสำหรับความยินยอมทางการตลาด
+    #             consent_ic360_data = transform_marketing_consent_for_ic360(consent_data)
                 
-                # ตรวจสอบว่ามีข้อมูลความยินยอมทางการตลาดอยู่แล้วหรือไม่
-                check_query = """
-                    SELECT contact_id 
-                    FROM nl_marketing_consent 
-                    WHERE contact_id = %(contact_id)s
-                    AND channel = %(channel)s
-                """
-                check_params = {
-                    "contact_id": consent_ic360_data.get("contact_id"),
-                    "channel": consent_ic360_data.get("channel")
-                }
-                check_result = self.client.execute_query(check_query, check_params)
+    #             # ตรวจสอบว่ามีข้อมูลความยินยอมทางการตลาดอยู่แล้วหรือไม่
+    #             check_query = """
+    #                 SELECT contact_id 
+    #                 FROM nl_marketing_consent 
+    #                 WHERE contact_id = %(contact_id)s
+    #                 AND channel = %(channel)s
+    #             """
+    #             check_params = {
+    #                 "contact_id": consent_ic360_data.get("contact_id"),
+    #                 "channel": consent_ic360_data.get("channel")
+    #             }
+    #             check_result = self.client.execute_query(check_query, check_params)
                 
-                if check_result and len(check_result) > 0:
-                    # อัพเดทความยินยอมทางการตลาดที่มีอยู่แล้ว
-                    update_query = """
-                        UPDATE nl_marketing_consent 
-                        SET consent_marketing = %(consent_marketing)s,
-                            consent_marketing_dt = %(consent_marketing_dt)s,
-                            consent_version = %(consent_version)s,
-                            last_upd_dt = NOW()
-                        WHERE contact_id = %(contact_id)s
-                        AND channel = %(channel)s
-                    """
-                    self.client.execute_query(update_query, consent_ic360_data)
-                else:
-                    # เพิ่มความยินยอมทางการตลาดใหม่
-                    insert_query = """
-                        INSERT INTO nl_marketing_consent (
-                            contact_id, channel, consent_marketing,
-                            consent_marketing_dt, consent_version,
-                            create_dt, last_upd_dt
-                        ) VALUES (
-                            %(contact_id)s, %(channel)s, %(consent_marketing)s,
-                            %(consent_marketing_dt)s, %(consent_version)s,
-                            NOW(), NOW()
-                        )
-                    """
-                    self.client.execute_query(insert_query, consent_ic360_data)
+    #             if check_result and len(check_result) > 0:
+    #                 # อัพเดทความยินยอมทางการตลาดที่มีอยู่แล้ว
+    #                 update_query = """
+    #                     UPDATE nl_marketing_consent 
+    #                     SET consent_marketing = %(consent_marketing)s,
+    #                         consent_marketing_dt = %(consent_marketing_dt)s,
+    #                         consent_version = %(consent_version)s,
+    #                         last_upd_dt = NOW()
+    #                     WHERE contact_id = %(contact_id)s
+    #                     AND channel = %(channel)s
+    #                 """
+    #                 self.client.execute_query(update_query, consent_ic360_data)
+    #             else:
+    #                 # เพิ่มความยินยอมทางการตลาดใหม่
+    #                 insert_query = """
+    #                     INSERT INTO nl_marketing_consent (
+    #                         contact_id, channel, consent_marketing,
+    #                         consent_marketing_dt, consent_version,
+    #                         create_dt, last_upd_dt
+    #                     ) VALUES (
+    #                         %(contact_id)s, %(channel)s, %(consent_marketing)s,
+    #                         %(consent_marketing_dt)s, %(consent_version)s,
+    #                         NOW(), NOW()
+    #                     )
+    #                 """
+    #                 self.client.execute_query(insert_query, consent_ic360_data)
                     
-                result = {"status": "success", "message": "IC360 marketing consent updated successfully"}
+    #             result = {"status": "success", "message": "IC360 marketing consent updated successfully"}
                     
-            elif consent_data.get("consent_type") == "PRIVACY":
-                # สร้างข้อมูลสำหรับความยินยอมนโยบายความเป็นส่วนตัว
-                consent_ic360_data = transform_primary_consent_for_ic360(consent_data)
+    #         elif consent_data.get("consent_type") == "PRIVACY":
+    #             # สร้างข้อมูลสำหรับความยินยอมนโยบายความเป็นส่วนตัว
+    #             consent_ic360_data = transform_primary_consent_for_ic360(consent_data)
             
-                # ตรวจสอบว่ามีข้อมูลความยินยอมนโยบายความเป็นส่วนตัวอยู่แล้วหรือไม่
-                check_query = """
-                    SELECT contact_id 
-                    FROM nl_primary_consent 
-                    WHERE contact_id = %(contact_id)s
-                    AND channel = %(channel)s
-                """
-                check_params = {
-                    "contact_id": consent_ic360_data.get("contact_id"),
-                    "channel": consent_ic360_data.get("channel")
-                }
-                check_result = self.client.execute_query(check_query, check_params)
+    #             # ตรวจสอบว่ามีข้อมูลความยินยอมนโยบายความเป็นส่วนตัวอยู่แล้วหรือไม่
+    #             check_query = """
+    #                 SELECT contact_id 
+    #                 FROM nl_primary_consent 
+    #                 WHERE contact_id = %(contact_id)s
+    #                 AND channel = %(channel)s
+    #             """
+    #             check_params = {
+    #                 "contact_id": consent_ic360_data.get("contact_id"),
+    #                 "channel": consent_ic360_data.get("channel")
+    #             }
+    #             check_result = self.client.execute_query(check_query, check_params)
                 
-                if check_result and len(check_result) > 0:
-                    # อัพเดทความยินยอมนโยบายความเป็นส่วนตัวที่มีอยู่แล้ว
-                    update_query = """
-                        UPDATE nl_primary_consent 
-                        SET consent_privacy_13y = %(consent_privacy_13y)s,
-                            privacy_13y_dt = %(privacy_13y_dt)s,
-                            consent_version = %(consent_version)s,
-                            last_upd_dt = NOW()
-                        WHERE contact_id = %(contact_id)s
-                        AND channel = %(channel)s
-                    """
-                    self.client.execute_query(update_query, consent_ic360_data)
-                else:
-                    # เพิ่มความยินยอมนโยบายความเป็นส่วนตัวใหม่
-                    insert_query = """
-                        INSERT INTO nl_primary_consent (
-                            contact_id, register_dt, channel,
-                            consent_privacy_13y, privacy_13y_dt, consent_version,
-                            create_dt, last_upd_dt
-                        ) VALUES (
-                            %(contact_id)s, NOW(), %(channel)s,
-                            %(consent_privacy_13y)s, %(privacy_13y_dt)s, %(consent_version)s,
-                            NOW(), NOW()
-                        )
-                    """
-                    self.client.execute_query(insert_query, consent_ic360_data)
+    #             if check_result and len(check_result) > 0:
+    #                 # อัพเดทความยินยอมนโยบายความเป็นส่วนตัวที่มีอยู่แล้ว
+    #                 update_query = """
+    #                     UPDATE nl_primary_consent 
+    #                     SET consent_privacy_13y = %(consent_privacy_13y)s,
+    #                         privacy_13y_dt = %(privacy_13y_dt)s,
+    #                         consent_version = %(consent_version)s,
+    #                         last_upd_dt = NOW()
+    #                     WHERE contact_id = %(contact_id)s
+    #                     AND channel = %(channel)s
+    #                 """
+    #                 self.client.execute_query(update_query, consent_ic360_data)
+    #             else:
+    #                 # เพิ่มความยินยอมนโยบายความเป็นส่วนตัวใหม่
+    #                 insert_query = """
+    #                     INSERT INTO nl_primary_consent (
+    #                         contact_id, register_dt, channel,
+    #                         consent_privacy_13y, privacy_13y_dt, consent_version,
+    #                         create_dt, last_upd_dt
+    #                     ) VALUES (
+    #                         %(contact_id)s, NOW(), %(channel)s,
+    #                         %(consent_privacy_13y)s, %(privacy_13y_dt)s, %(consent_version)s,
+    #                         NOW(), NOW()
+    #                     )
+    #                 """
+    #                 self.client.execute_query(insert_query, consent_ic360_data)
                     
-                result = {"status": "success", "message": "IC360 privacy consent updated successfully"}
+    #             result = {"status": "success", "message": "IC360 privacy consent updated successfully"}
                 
-            else:
-                result = {"status": "error", "message": "Unknown consent type"}
+    #         else:
+    #             result = {"status": "error", "message": "Unknown consent type"}
                 
-        except Exception as e:
-            frappe.log_error(message=f"IC360 consent update error: {str(e)}", title="IC360 Consent Update Error")
-            result = {"status": "error", "message": str(e)}
+    #     except Exception as e:
+    #         frappe.log_error(message=f"IC360 consent update error: {str(e)}", title="IC360 Consent Update Error")
+    #         result = {"status": "error", "message": str(e)}
             
-        finally:
-            # ปิดการเชื่อมต่อ
-            self.client.disconnect()
+    #     finally:
+    #         # ปิดการเชื่อมต่อ
+    #         self.client.disconnect()
                 
-        return result
+    #     return result
             
