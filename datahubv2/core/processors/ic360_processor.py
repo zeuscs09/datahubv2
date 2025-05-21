@@ -181,7 +181,7 @@ class IC360Processor:
                 fields=["*"]
             )[0]
             if consent_data:
-                nl_ks_contact_data["consentid"] = consent_data.get("consentid")
+                nl_ks_contact_data["consentid"] = consent_data.get("consent_version")
             
             if check_nl_result and len(check_nl_result) > 0:
                 # อัพเดท nl_ks_contact ที่มีอยู่แล้ว
