@@ -173,6 +173,15 @@ class IC360Processor:
             check_nl_query = "SELECT contact_id FROM nl_ks_contact WHERE contact_id = %(contact_id)s"
             check_nl_params = {"contact_id": nl_ks_contact_data.get("contact_id")}
             check_nl_result = self.client.execute_query(check_nl_query, check_nl_params)
+            consent_data = frappe.get_list("ETL Consent", 
+                filters={
+                    "contact_id": nl_ks_contact_data.get("contact_id"),
+                    "consent_type": "PRIVACY"
+                },
+                fields=["*"]
+            )[0]
+            if consent_data:
+                nl_ks_contact_data["consentid"] = consent_data.get("consentid")
             
             if check_nl_result and len(check_nl_result) > 0:
                 # อัพเดท nl_ks_contact ที่มีอยู่แล้ว
@@ -182,6 +191,7 @@ class IC360Processor:
                         register_date = %(register_date)s,
                         agent_referral_code = %(agent_referral_code)s,
                         sourceid = %(sourceid)s,
+                        consentid = %(consentid)s,
                         last_upd_dt = NOW()
                     WHERE contact_id = %(contact_id)s
                 """
@@ -191,10 +201,10 @@ class IC360Processor:
                 insert_nl_query = """
                     INSERT INTO nl_ks_contact (
                         contact_id, flag_complete, register_date,
-                        agent_referral_code, sourceid, create_dt, last_upd_dt
+                        agent_referral_code, sourceid, create_dt, last_upd_dt,consentid
                     ) VALUES (
                         %(contact_id)s, %(flag_complete)s, %(register_date)s,
-                        %(agent_referral_code)s, %(sourceid)s, NOW(), NOW()
+                        %(agent_referral_code)s, %(sourceid)s, NOW(), NOW(),%(consentid)s
                     )
                 """
                 self.client.execute_query(insert_nl_query, nl_ks_contact_data)

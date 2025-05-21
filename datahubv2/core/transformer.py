@@ -212,7 +212,8 @@ def transform_nl_ks_contact_for_ic360(profile_data):
         "register_date": profile_data.get("date_registration") or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "agent_referral_code": profile_data.get("nestle_agent_referral_code") or "",
         "sourceid": profile_data.get("sourceid") or profile_data.get("data_source_code") or "",
-        "last_upd_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "last_upd_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "consentid": profile_data.get("consentid") or ""
     }
 
 def transform_address_for_ic360(profile_data):
