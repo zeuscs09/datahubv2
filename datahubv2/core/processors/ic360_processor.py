@@ -648,22 +648,7 @@ class IC360Processor:
             # ดึง profile document
             profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
             
-            # ดึงข้อมูล consent type MARKETING จาก ETL Consent
-            marketing_consent = None
-            marketing_consents = frappe.get_all(
-                "ETL Consent",
-                filters={
-                    "contact_id": profile_id,
-                    "consent_type": "MARKETING"
-                },
-                fields=["consent_status", "consent_date", "consent_version", "is_consented"],
-                order_by="creation desc",
-                limit=1
-            )
-
-            if marketing_consents:
-                marketing_consent = marketing_consents[0]
-
+            # ดึงข้อมูล consent type PRIVACY สำหรับ consent_date
             privacy_consent = None
             privacy_consents = frappe.get_all(
                 "ETL Consent",
@@ -671,14 +656,77 @@ class IC360Processor:
                     "contact_id": profile_id,
                     "consent_type": "PRIVACY"
                 },
-                fields=["consent_status", "consent_date", "consent_version", "is_consented"],
+                fields=["consent_date"],
                 order_by="creation desc",
                 limit=1
             )
-
+            
             if privacy_consents:
                 privacy_consent = privacy_consents[0]
-
+            
+            # ดึงข้อมูล consent type MARKETING สำหรับ subscriptions
+            marketing_consent = None
+            marketing_consents = frappe.get_all(
+                "ETL Consent",
+                filters={
+                    "contact_id": profile_id,
+                    "consent_type": "MARKETING"
+                },
+                fields=["is_consented"],
+                order_by="creation desc",
+                limit=1
+            )
+            
+            if marketing_consents:
+                marketing_consent = marketing_consents[0]
+            
+            # ตรวจสอบ group จาก IC360 incident data
+            group_value = "Normal"  # default value
+            activity_value = ""  # default value
+            try:
+                # Query รวม: ตรวจสอบจำนวน records และดึง activity details
+                group_query = """
+                    SELECT COUNT(*) as count_records,
+                           STRING_AGG(DISTINCT a.desc_detail, '; ') as activity_detail
+                    FROM ks_incident a
+                    LEFT JOIN ks_lookup l0 ON a.inc_status_id = l0.code_id AND l0.table_name='INCIDENT_STATUS'
+                    LEFT JOIN ks_lookup l1 ON a.contact_channel_id = l1.code_id AND l1.table_name='CONTACT_CHANNEL'
+                    LEFT JOIN nl_ks_incident ks1 ON a.incident_id = ks1.incident_id
+                    LEFT JOIN nl_product l2 ON CAST(ks1.productid as character varying) = l2.productid
+                    LEFT JOIN nl_formula l3 ON CAST(ks1.formulaid as character varying) = l3.formulaid
+                    WHERE 
+                    (
+                        category_desc LIKE %s
+                        OR category_desc LIKE %s
+                        OR category_desc LIKE %s
+                        OR category_desc LIKE %s
+                    )
+                    AND l3.formula_name LIKE %s
+                    AND affected_contact_id = %s
+                """
+                
+                query_params = [
+                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ผดผื่น/ผิวลอก/ไข|%',
+                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ท้องเสีย/ถ่ายเหลว|%',
+                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|หวัด/ไอ/มีน้ำมูก/หายใจครืดคราด|%',
+                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|อาการแพ้นมวัว|%',
+                    '%PRO HA%',
+                    profile_doc.contact_id
+                ]
+                
+                # เชื่อมต่อ IC360 database เพื่อ query
+                if self.client.connect():
+                    group_result = self.client.execute_query(group_query, query_params)
+                    if group_result and len(group_result) > 0:
+                        if group_result[0].get("count_records", 0) > 0:
+                            group_value = "HA"
+                        activity_value = group_result[0].get("activity_detail", "") or ""
+                    self.client.disconnect()
+                        
+            except Exception as e:
+                frappe.log_error(message=f"Error checking group data: {str(e)}", title="Group Check Error")
+                # ใช้ default value "Normal" และ "" ถ้า error
+            
             # สร้าง JSON สำหรับ outbound
             outbound_data = {
                 "uid": profile_doc.uid or profile_doc.contact_id,  # ใช้ uid แทน contact_id ถ้ามี
@@ -717,7 +765,8 @@ class IC360Processor:
                 "child_birthdatereliability": getattr(profile_doc, 'child_birthdatereliability', None),
                 "gg_hospital": getattr(profile_doc, 'gg_hospital', None),
                 "gg_child_delivery_type": getattr(profile_doc, 'gg_child_delivery_type', None),
-                "gg_milk_currently_consuming": getattr(profile_doc, 'gg_milk_currently_consuming', None)
+                "gg_milk_currently_consuming": getattr(profile_doc, 'gg_milk_currently_consuming', None),
+                "activity": activity_value
             }
             
             # เพิ่มข้อมูลเด็กทั้งหมด
@@ -763,7 +812,7 @@ class IC360Processor:
             obj_test= {
                 "channel_id":"CHATBOT_Master",
                 "source_id":"icc",
-                "message":  safe_json_dumps(outbound_data),
+                "message": "SEND SD " +  safe_json_dumps(outbound_data),
             }
             outbound_doc = frappe.get_doc({
                 "doctype": "DH Webhook Outbound",
@@ -783,7 +832,185 @@ class IC360Processor:
             frappe.log_error(message=f"Create outbound data error: {str(e)}", title="Outbound Data Error")
             raise e
 
-    def sync_from_ic360(self, contact_id,sync_type="MANUAL"):
+    def create_outbound_data_CN(self, profile_id):
+        """สร้างข้อมูล outbound สำหรับ CN และบันทึกลง DH Webhook Outbound"""
+        try:
+            # ดึง profile document
+            profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
+            if not profile_doc.line_mid:
+                frappe.log_error(message=f"Line MID is required cn not created {profile_id}", title="Line MID is required CN Not Created")
+                return {"status": "error", "message": "Line MID is required"}
+            print(profile_id)
+            # ตรวจสอบว่ามีเด็กและมีวันเกิดหรือไม่
+            child_check = frappe.get_all(
+                "ETL Child", 
+                filters={"motherid": profile_id},
+                fields=["name", "birthdate"],
+                order_by="creation desc",
+                limit=1
+            )
+            print(child_check)
+            if not child_check or not child_check[0].get("birthdate"):
+                frappe.log_error(message=f"Child birthdate is required cn not created {profile_id}", title="Child Birthdate is required CN Not Created")
+                return {"status": "error", "message": "Child birthdate is required"}
+            
+            # ดึงข้อมูล consent type PRIVACY สำหรับ consent_date
+            privacy_consent = None
+            privacy_consents = frappe.get_all(
+                "ETL Consent",
+                filters={
+                    "contact_id": profile_id,
+                    "consent_type": "PRIVACY"
+                },
+                fields=["consent_date"],
+                order_by="creation desc",
+                limit=1
+            )
+            
+            if privacy_consents:
+                privacy_consent = privacy_consents[0]
+            
+            # ดึงข้อมูล consent type MARKETING สำหรับ subscriptions
+            marketing_consent = None
+            marketing_consents = frappe.get_all(
+                "ETL Consent",
+                filters={
+                    "contact_id": profile_id,
+                    "consent_type": "MARKETING"
+                },
+                fields=["is_consented"],
+                order_by="creation desc",
+                limit=1
+            )
+            
+            if marketing_consents:
+                marketing_consent = marketing_consents[0]
+            
+            # ตรวจสอบ group จาก IC360 incident data
+            group_value = "Normal"  # default value
+            activity_value = ""  # default value
+            try:
+                # Query รวม: ตรวจสอบจำนวน records และดึง activity details
+                group_query = """
+                    SELECT COUNT(*) as count_records,
+                           STRING_AGG(DISTINCT a.desc_detail, '; ') as activity_detail
+                    FROM ks_incident a
+                    LEFT JOIN ks_lookup l0 ON a.inc_status_id = l0.code_id AND l0.table_name='INCIDENT_STATUS'
+                    LEFT JOIN ks_lookup l1 ON a.contact_channel_id = l1.code_id AND l1.table_name='CONTACT_CHANNEL'
+                    LEFT JOIN nl_ks_incident ks1 ON a.incident_id = ks1.incident_id
+                    LEFT JOIN nl_product l2 ON CAST(ks1.productid as character varying) = l2.productid
+                    LEFT JOIN nl_formula l3 ON CAST(ks1.formulaid as character varying) = l3.formulaid
+                    WHERE 
+                    (
+                        category_desc LIKE %s
+                        OR category_desc LIKE %s
+                        OR category_desc LIKE %s
+                        OR category_desc LIKE %s
+                    )
+                    AND l3.formula_name LIKE %s
+                    AND affected_contact_id = %s
+                """
+                
+                query_params = [
+                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ผดผื่น/ผิวลอก/ไข|%',
+                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ท้องเสีย/ถ่ายเหลว|%',
+                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|หวัด/ไอ/มีน้ำมูก/หายใจครืดคราด|%',
+                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|อาการแพ้นมวัว|%',
+                    '%PRO HA%',
+                    profile_doc.contact_id
+                ]
+                
+                # เชื่อมต่อ IC360 database เพื่อ query
+                if self.client.connect():
+                    group_result = self.client.execute_query(group_query, query_params)
+                    frappe.log_error(message=f"Group result: {group_result}", title="Group Result")
+                    if group_result and len(group_result) > 0:
+                        if group_result[0].get("count_records", 0) > 0:
+                            group_value = "HA"
+                        activity_value = group_result[0].get("activity_detail", "") or ""
+                    self.client.disconnect()
+                        
+            except Exception as e:
+                frappe.log_error(message=f"Error checking group data: {str(e)}", title="Group Check Error")
+                # ใช้ default value "Normal" และ "" ถ้า error
+            
+            # สร้าง JSON สำหรับ outbound CN
+            outbound_data = {
+                "mom_id": profile_doc.contact_id,
+                "line_mid": profile_doc.line_mid or "",
+                "city": profile_doc.amphur_name or "",
+                "region": profile_doc.province_name or "",
+                "product_before_pregnancy": "",
+                "consent_date": privacy_consent.get("consent_date") if privacy_consent else None,
+                "date_registration": profile_doc.date_registration,
+                "last_updated": profile_doc.last_updated,
+                "status": profile_doc.status,
+                "subscriptions": "y" if (marketing_consent and marketing_consent.get("is_consented") == "Yes") else "n",
+                "formula": profile_doc.gg_milk_currently_consuming,
+                "activity": activity_value,
+                "remark": "",
+                "group": group_value
+            }
+            
+            # ดึงข้อมูลเด็กคนสุดท้าย (ใช้ข้อมูลจาก child_check ที่ตรวจสอบแล้ว)
+            if child_check:
+                child_doc = frappe.get_doc("ETL Child", child_check[0]["name"])
+                
+                # คำนวณ child_birthdatereliability
+                child_birthdatereliability = ""
+                if child_doc.birthdate:
+                    try:
+                        from datetime import datetime
+                        birthdate_obj = datetime.strptime(str(child_doc.birthdate), "%Y-%m-%d")
+                        days = (birthdate_obj - datetime.now()).days
+                        if days < 0:
+                            child_birthdatereliability = "4"
+                        else:
+                            child_birthdatereliability = "0"
+                    except Exception:
+                        child_birthdatereliability = ""
+                
+                child_data = {
+                    "child_id": child_doc.cusid,
+                    "child_birthdatereliability": child_birthdatereliability,
+                    "child_birthdate": child_doc.birthdate,
+                    "gg_hospital": getattr(profile_doc, 'gg_hospital', "") or "",
+                    "gg_child_delivery_type": getattr(profile_doc, 'gg_child_delivery_type', "") or "",
+                    "gg_milk_currently_consuming": getattr(profile_doc, 'gg_milk_currently_consuming', "") or "",
+                    "child_add_date": child_doc.receivedate
+                }
+                if child_doc.remark:
+                    outbound_data["remark"] = child_doc.remark
+                outbound_data["child"] = [child_data]
+            
+            # บันทึก outbound data
+            # ดึงค่า webhook URL จากการตั้งค่าระบบ
+            webhook_url = frappe.db.get_single_value("DH Setting", "cn_url") or ""
+            headers = frappe.db.get_single_value("DH Setting", "cn_header") or "default-key"
+            obj_test= {
+                "channel_id":"CHATBOT_Master",
+                "source_id":"icc",
+                "message": "SEND CLICK NEXT " + safe_json_dumps(outbound_data),
+            }
+            outbound_doc = frappe.get_doc({
+                "doctype": "DH Webhook Outbound",
+                "profile_id": profile_id,
+                "sent_to": "CN",
+                "webhook_url": webhook_url,
+                "payload": safe_json_dumps(obj_test),
+                # "payload": safe_json_dumps(outbound_data),
+                "headers": safe_json_dumps(headers),
+                "status": "Pending" if webhook_url else "Draft"
+            })
+            outbound_doc.insert(ignore_permissions=True)
+            
+            return outbound_doc.name
+            
+        except Exception as e:
+            frappe.log_error(message=f"Create CN outbound data error: {str(e)}", title="CN Outbound Data Error")
+            raise e
+
+    def sync_from_ic360(self, contact_id,sync_type="MANUAL",create_hook=True):
         """ซิงค์ข้อมูลจาก IC360 มาเก็บใน DataHub"""
         try:
             # เชื่อมต่อ IC360 database
@@ -1279,7 +1506,11 @@ class IC360Processor:
                     # "outbound": outbound_data
                 })
                 log_doc.save(ignore_permissions=True)
-            self.create_outbound_data_SD(profile_id)
+                
+            if create_hook: 
+                self.create_outbound_data_SD(profile_id)
+                self.create_outbound_data_CN(profile_id)
+                
             return {
                 "status": "success",
                 "message": "Profile synced successfully",
@@ -1287,6 +1518,7 @@ class IC360Processor:
                 "children": child_ids,
                 "campaigns": campaign_ids,
                 "consents": consent_ids,
+               
                 # "outbound": outbound_data
             }
             

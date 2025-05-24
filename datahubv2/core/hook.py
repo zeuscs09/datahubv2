@@ -27,24 +27,24 @@ def send_webhook_data(doc):
                 
                 # ถ้าผลลัพธ์เป็น string แสดงว่าเป็น double-encoded JSON
                 if isinstance(custom_headers, str):
-                    frappe.log_error(
-                        message=f"Double-encoded JSON detected, parsing again: {custom_headers}", 
-                        title=f"Webhook Double JSON - {doc.name}"
-                    )
+                    # frappe.log_error(
+                    #     message=f"Double-encoded JSON detected, parsing again: {custom_headers}", 
+                    #     title=f"Webhook Double JSON - {doc.name}"
+                    # )
                     custom_headers = json.loads(custom_headers)
                 
                 if isinstance(custom_headers, dict):
                     # ใช้ custom_headers โดยตรง แทนการ update
                     headers = custom_headers
-                    frappe.log_error(
-                        message=f"Using custom headers: {headers}", 
-                        title=f"Webhook Custom Headers Applied - {doc.name}"
-                    )
-                else:
-                    frappe.log_error(
-                        message=f"Custom headers is still not a dict after parsing: {type(custom_headers)}", 
-                        title=f"Webhook Still Not Dict Error - {doc.name}"
-                    )
+                    # frappe.log_error(
+                    #     message=f"Using custom headers: {headers}", 
+                    #     title=f"Webhook Custom Headers Applied - {doc.name}"
+                    # )
+                # else:
+                #     frappe.log_error(
+                #         message=f"Custom headers is still not a dict after parsing: {type(custom_headers)}", 
+                #         title=f"Webhook Still Not Dict Error - {doc.name}"
+                #     )
             except json.JSONDecodeError as e:
                 frappe.log_error(
                     message=f"JSON decode error: {str(e)}, Headers: {doc.headers}", 
@@ -52,10 +52,10 @@ def send_webhook_data(doc):
                 )
                 raise Exception(f"Invalid headers JSON: {str(e)}")
         
-        frappe.log_error(
-            message=f"Final Headers: {headers}", 
-            title=f"Webhook Final Headers - {doc.name}"
-        )
+        # frappe.log_error(
+        #     message=f"Final Headers: {headers}", 
+        #     title=f"Webhook Final Headers - {doc.name}"
+        # )
         # เตรียม payload
         payload_data = {}
         if doc.payload:
@@ -63,10 +63,10 @@ def send_webhook_data(doc):
                 payload_data = json.loads(doc.payload)
             except json.JSONDecodeError:
                 raise Exception("Invalid payload JSON")
-        frappe.log_error(
-            message=f"Payload: {payload_data}", 
-            title=f"Webhook Payload - {doc.name}"
-        )
+        # frappe.log_error(
+        #     message=f"Payload: {payload_data}", 
+        #     title=f"Webhook Payload - {doc.name}"
+        # )
         # บันทึกเวลาที่เริ่มส่ง
         doc.sent_at = datetime.now()
         doc.save(ignore_permissions=True)

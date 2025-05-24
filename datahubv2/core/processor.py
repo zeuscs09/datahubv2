@@ -47,13 +47,13 @@ class DataHubProcessor:
         """ซิงค์ข้อมูลจาก webhook inbound"""
         try:
             # บันทึก log สำหรับการเริ่มต้น sync
-            frappe.log_error(message=f"Starting webhook sync for ID: {webhook_doc.name}, inbound_id: {webhook_doc.inbound_id}", title="Webhook Sync Start")
+            #frappe.log_error(message=f"Starting webhook sync for ID: {webhook_doc.name}, inbound_id: {webhook_doc.inbound_id}", title="Webhook Sync Start")
             
             # ดึงข้อมูลจาก webhook
             payload = frappe.parse_json(webhook_doc.payload)
             
             # บันทึก payload สำหรับการดีบัก
-            frappe.log_error(message=f"Webhook payload: {payload}", title="Webhook Payload")
+            #frappe.log_error(message=f"Webhook payload: {payload}", title="Webhook Payload")
             
             child_profiles = []
             # ประมวลผลข้อมูลโปรไฟล์
@@ -122,8 +122,9 @@ class DataHubProcessor:
             })
             
             self.sync_to_ic360(profile_id)
-            webhook_doc.save(ignore_permissions=True)
             
+            webhook_doc.save(ignore_permissions=True)
+            self.ic360_processor.create_outbound_data_CN(profile_id)
             return {"status": "success", "message": "Webhook data synced successfully", "profile_id": profile_id}
         except Exception as e:
             frappe.log_error(message=f"Webhook sync error: {str(e)}\n{frappe.get_traceback()}", title="Webhook Sync Error")
