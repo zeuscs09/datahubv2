@@ -18,15 +18,48 @@ def send_webhook_job():
         
 def send_webhook_job_async():
     """ส่ง webhook ทั้งหมดที่สถานะเป็น Pending แบบ async"""
-    webhooks = frappe.get_all("DH Webhook Outbound", filters={"status": "Pending"}, fields=["name"])
-    for webhook in webhooks:
-        # ส่งแต่ละ webhook ไปยัง queue
-        frappe.enqueue(
-            "datahubv2.core.job.send_single_webhook",
-            webhook_name=webhook.name,
-            queue="default",
-            timeout=300
+    try:
+        frappe.log_error(
+            message="Starting send_webhook_job_async", 
+            title="Webhook Job Start"
         )
+        
+        webhooks = frappe.get_all("DH Webhook Outbound", filters={"status": "Pending"}, fields=["name"])
+        
+        frappe.log_error(
+            message=f"Found {len(webhooks)} pending webhooks: {[w.name for w in webhooks]}", 
+            title="Webhook Job Count"
+        )
+        
+        if not webhooks:
+            frappe.log_error(
+                message="No pending webhooks found", 
+                title="Webhook Job No Data"
+            )
+            return {"status": "success", "message": "No pending webhooks"}
+        
+        for webhook in webhooks:
+            # ส่งแต่ละ webhook ไปยัง queue
+            job = frappe.enqueue(
+                "datahubv2.core.job.send_single_webhook",
+                webhook_name=webhook.name,
+                queue="default",
+                timeout=300
+            )
+            
+            frappe.log_error(
+                message=f"Enqueued webhook {webhook.name} with job ID: {job.id if job else 'None'}", 
+                title="Webhook Job Enqueued"
+            )
+            
+        return {"status": "success", "message": f"Enqueued {len(webhooks)} webhooks"}
+        
+    except Exception as e:
+        frappe.log_error(
+            message=f"Error in send_webhook_job_async: {str(e)}", 
+            title="Webhook Job Error"
+        )
+        raise e
 
 def send_single_webhook(webhook_name):
     """ส่ง webhook เดียว (สำหรับใช้ใน queue)"""
@@ -56,7 +89,7 @@ def sync_single_ic360(contact_id, log_name=None):
         
         # อัพเดทสถานะ log ถ้ามี
         if log_name:
-            
+            frappe.log_error(message=f"Updating log {log_name} to True", title="sync_single_ic360")
             log_doc = frappe.get_doc("DH IC360Log", log_name)
             log_doc.is_sync = True
             log_doc.sync_result = frappe.as_json(result)
