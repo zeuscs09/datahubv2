@@ -1,7 +1,6 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:campaign_id",
  "creation": "2024-05-03 00:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -39,8 +38,7 @@
   {
    "fieldname": "campaign_id",
    "fieldtype": "Data",
-   "label": "Campaign ID",
-   "unique": 1
+   "label": "Campaign ID"
   },
   {
    "fieldname": "campaign_info",
@@ -150,11 +148,10 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-04 12:48:00.855914",
+ "modified": "2025-05-24 07:45:01.064685",
  "modified_by": "Administrator",
  "module": "Datahubv2",
  "name": "ETL Campaign",
- "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

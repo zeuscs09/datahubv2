@@ -1,5 +1,6 @@
 import frappe
-from datetime import datetime
+import json
+from datetime import datetime, date
 from ..validator import (
     validate_profile_db_update, validate_child_db_update, 
     validate_campaign_db_update, validate_consent_db_update
@@ -14,6 +15,54 @@ from ..transformer import (
 )
 from ...lib.ic360.client import IC360Client
 from ...core.lookup import update_sd_lookup
+
+def safe_json_dumps(data, **kwargs):
+    """แปลง data เป็น JSON string โดยรองรับภาษาไทยและ date/datetime objects และเอาค่า null/ว่างออก"""
+    
+    def clean_data(obj):
+        """เอาค่า null, None, และค่าว่างออก รวมถึง "null" และ "NULL" string"""
+        if isinstance(obj, dict):
+            cleaned = {}
+            for key, value in obj.items():
+                cleaned_value = clean_data(value)
+                # เก็บเฉพาะค่าที่ไม่เป็น null, None, หรือค่าว่าง
+                if (cleaned_value is not None and 
+                    cleaned_value != "" and 
+                    cleaned_value != [] and 
+                    cleaned_value != "null" and 
+                    cleaned_value != "NULL"):
+                    cleaned[key] = cleaned_value
+            return cleaned
+        elif isinstance(obj, list):
+            cleaned = []
+            for item in obj:
+                cleaned_item = clean_data(item)
+                # เก็บเฉพาะค่าที่ไม่เป็น null, None, หรือค่าว่าง
+                if (cleaned_item is not None and 
+                    cleaned_item != "" and 
+                    cleaned_item != [] and 
+                    cleaned_item != "null" and 
+                    cleaned_item != "NULL"):
+                    cleaned.append(cleaned_item)
+            return cleaned
+        else:
+            return obj
+    
+    def json_serializer(obj):
+        """Custom JSON serializer สำหรับ date และ datetime objects"""
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(obj, date):
+            return obj.strftime('%Y-%m-%d')
+        raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+    
+    # ทำความสะอาดข้อมูลก่อน
+    cleaned_data = clean_data(data)
+    
+    kwargs.setdefault('ensure_ascii', False)
+    kwargs.setdefault('indent', 2)
+    kwargs.setdefault('default', json_serializer)
+    return json.dumps(cleaned_data, **kwargs)
 
 class IC360Processor:
     def __init__(self, parent_processor):
@@ -173,15 +222,20 @@ class IC360Processor:
             check_nl_query = "SELECT contact_id FROM nl_ks_contact WHERE contact_id = %(contact_id)s"
             check_nl_params = {"contact_id": nl_ks_contact_data.get("contact_id")}
             check_nl_result = self.client.execute_query(check_nl_query, check_nl_params)
-            consent_data = frappe.get_list("ETL Consent", 
+            
+            # ดึงข้อมูล consent version ถ้ามี
+            consent_list = frappe.get_list("ETL Consent", 
                 filters={
                     "contact_id": nl_ks_contact_data.get("contact_id"),
                     "consent_type": "PRIVACY"
                 },
-                fields=["*"]
-            )[0]
-            if consent_data:
-                nl_ks_contact_data["consentid"] = consent_data.get("consent_version")
+                fields=["consent_version"],
+                limit=1
+            )
+            if consent_list:
+                nl_ks_contact_data["consentid"] = consent_list[0].get("consent_version")
+            else:
+                nl_ks_contact_data["consentid"] = ""
             
             if check_nl_result and len(check_nl_result) > 0:
                 # อัพเดท nl_ks_contact ที่มีอยู่แล้ว
@@ -587,7 +641,148 @@ class IC360Processor:
                 
         return result
 
-    def sync_from_ic360(self, contact_id):
+    def create_outbound_data_SD(self, profile_id):
+        """สร้างข้อมูล outbound และบันทึกลง DH Webhook Outbound"""
+        try:
+            # ดึง profile document
+            profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
+            
+            # ดึงข้อมูล consent type MARKETING จาก ETL Consent
+            marketing_consent = None
+            marketing_consents = frappe.get_all(
+                "ETL Consent",
+                filters={
+                    "contact_id": profile_id,
+                    "consent_type": "MARKETING"
+                },
+                fields=["consent_status", "consent_date", "consent_version", "is_consented"],
+                order_by="creation desc",
+                limit=1
+            )
+
+            if marketing_consents:
+                marketing_consent = marketing_consents[0]
+
+            privacy_consent = None
+            privacy_consents = frappe.get_all(
+                "ETL Consent",
+                filters={
+                    "contact_id": profile_id,
+                    "consent_type": "PRIVACY"
+                },
+                fields=["consent_status", "consent_date", "consent_version", "is_consented"],
+                order_by="creation desc",
+                limit=1
+            )
+
+            if privacy_consents:
+                privacy_consent = privacy_consents[0]
+
+            # สร้าง JSON สำหรับ outbound
+            outbound_data = {
+                "uid": profile_doc.uid or profile_doc.contact_id,  # ใช้ uid แทน contact_id ถ้ามี
+                "firstname": profile_doc.first_name,
+                "lastname": profile_doc.last_name,
+                "gender": getattr(profile_doc, 'gender_sd', profile_doc.gender),
+                "mom_birthdate": profile_doc.birth_date,
+                "phonenumber": (
+                    "+66" + profile_doc.phone[1:]
+                    if profile_doc.phone and profile_doc.phone.startswith("0")
+                    else profile_doc.phone
+                ),
+                "email": profile_doc.email,
+                "line_mid": profile_doc.line_mid,
+                "addressline1": profile_doc.address,
+                "region": profile_doc.province_name,
+                "city": profile_doc.amphur_name,
+                "addressline2": profile_doc.sub_district_name,
+                "zip": profile_doc.postal_code,
+                "income": profile_doc.income,
+                "contact_source": profile_doc.contact_source,
+                "data_source_code": getattr(profile_doc, 'data_source_code', profile_doc.sourceid),
+                "brand": getattr(profile_doc, 'brand', "WYETH"),
+                "status": getattr(profile_doc, 'status', 1),
+                "nestle_agent_referral_code": profile_doc.nestle_agent_referral_code,
+                "date_registration": profile_doc.date_registration,
+                "last_updated": profile_doc.last_updated,
+                # ใช้ข้อมูลจาก marketing_consent ถ้ามี ถ้าไม่มีให้ใช้จาก main profile
+                "Is_MKT_Subscribed": (marketing_consent.get("is_consented") if marketing_consent else getattr(profile_doc, 'is_consented', "No")) or "No",
+                "MKT_Subscribed_Date": marketing_consent.get("consent_date") if marketing_consent else getattr(profile_doc, 'marketing_subscribed_date', None),
+                "MKT_Subscribed_Version": marketing_consent.get("consent_version") if marketing_consent else getattr(profile_doc, 'marketing_subscribed_version', None),
+              
+                "consent_date": privacy_consent.get("consent_date") if privacy_consent else None,
+                "consent_version": privacy_consent.get("consent_version") if privacy_consent else None,
+                # ฟิลด์เกี่ยวกับเด็กที่อยู่ในระดับบนสุด ไม่ได้อยู่ในอาเรย์ child
+                "child_birthdatereliability": getattr(profile_doc, 'child_birthdatereliability', None),
+                "gg_hospital": getattr(profile_doc, 'gg_hospital', None),
+                "gg_child_delivery_type": getattr(profile_doc, 'gg_child_delivery_type', None),
+                "gg_milk_currently_consuming": getattr(profile_doc, 'gg_milk_currently_consuming', None)
+            }
+            
+            # เพิ่มข้อมูลเด็กทั้งหมด
+            children_data = []
+            childs = frappe.get_all("ETL Child", filters={"motherid": profile_id})
+            for child in childs:
+                child_doc = frappe.get_doc("ETL Child", child.name)
+                child_data = {
+                    "child_uid": child_doc.cusid,  # เปลี่ยนจาก child_id เป็น child_uid
+                    "child_firstname": child_doc.nname,
+                    "child_birthdate": child_doc.birthdate,
+                    "child_add_date": child_doc.createdate,
+                    "pc_code": child_doc.pc_code or "-",
+                    "reason": child_doc.reason
+                }
+                children_data.append(child_data)
+            
+            if children_data:
+                outbound_data["child"] = children_data
+            
+            # เพิ่มข้อมูล campaign/externalApplication
+            campaign_data = []
+            campaigns = frappe.get_all("ETL Campaign", filters={"contact_id": profile_id})
+            for campaign in campaigns:
+                campaign_doc = frappe.get_doc("ETL Campaign", campaign.name)
+                campaign_item = {
+                    "applicationCode": campaign_doc.application_code,
+                    "internaIdentifier": campaign_doc.internal_id,
+                    "internalAlternateIdentifier": campaign_doc.internal_alternate_id,
+                    "createDate": campaign_doc.create_date,
+                    "lastUpdateDate": campaign_doc.last_update_date
+                }
+                campaign_data.append(campaign_item)
+            
+            if campaign_data:
+                outbound_data["externalApplication"] = campaign_data
+            
+            # บันทึก outbound data
+            # ดึงค่า webhook URL จากการตั้งค่าระบบ
+           
+            webhook_url = frappe.db.get_single_value("DH Setting", "sd_url") or ""
+            headers = frappe.db.get_single_value("DH Setting", "sd_header") or "default-key"
+            obj_test= {
+                "channel_id":"CHATBOT_Master",
+                "source_id":"icc",
+                "message":  safe_json_dumps(outbound_data),
+            }
+            outbound_doc = frappe.get_doc({
+                "doctype": "DH Webhook Outbound",
+                "profile_id": profile_id,
+                "sent_to": "SD",
+                "webhook_url": webhook_url,
+                "payload": safe_json_dumps(obj_test),
+                # "payload": safe_json_dumps(outbound_data),
+                "headers": safe_json_dumps(headers),
+                "status": "Pending" if webhook_url else "Draft"
+            })
+            outbound_doc.insert(ignore_permissions=True)
+            
+            return outbound_doc.name
+            
+        except Exception as e:
+            frappe.log_error(message=f"Create outbound data error: {str(e)}", title="Outbound Data Error")
+            raise e
+
+    def sync_from_ic360(self, contact_id,sync_type="MANUAL"):
         """ซิงค์ข้อมูลจาก IC360 มาเก็บใน DataHub"""
         try:
             # เชื่อมต่อ IC360 database
@@ -596,7 +791,7 @@ class IC360Processor:
             
             # บันทึก log สำหรับการเริ่มต้น sync
             log_id = self.parent.create_sync_log(
-                sync_type="INBOUND",
+                sync_type=sync_type,
                 raw_data={"contact_id": contact_id},
                 status="Processing"
             )
@@ -744,7 +939,7 @@ class IC360Processor:
                 })
                 doc.insert(ignore_permissions=True)
                 profile_id = doc.name
-            
+            profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
             # 2. ดึงข้อมูลเด็กจาก IC360
             child_query = """
                 SELECT 
@@ -853,28 +1048,47 @@ class IC360Processor:
                     child_doc.insert(ignore_permissions=True)
                     child_ids.append(child_doc.name)
                 
+                # อัพเดท lookup สำหรับเด็กแต่ละคน
+                update_sd_lookup(profile_doc, child_doc)
+                
                 # เก็บข้อมูลเด็กคนล่าสุด
                 if not latest_child_data or (child_data.get("updatedate") and (not latest_child_data.get("updatedate") or child_data.get("updatedate") > latest_child_data.get("updatedate"))):
                     latest_child_data = child_data
                     
-            update_sd_lookup(doc,latest_child_data)
+            # ดึง profile document เพื่อใช้ใน update_sd_lookup
+            # profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
+            # update_sd_lookup(profile_doc, latest_child_data)
             
             # อัพเดท Main Profile ด้วยข้อมูลเด็กคนล่าสุด
             if latest_child_data:
+                # ถ้าคำนวนวันเกิดเด็กแล้วได้น้อยกว่า 0 ให้ระบุ 4 else 0
+                from datetime import datetime
+                child_birthdate = latest_child_data.get("birthdate")
+                childbirthdatereliability = 0
+                if child_birthdate:
+                    try:
+                        birthdate_obj = datetime.strptime(str(child_birthdate), "%Y-%m-%d")
+                        days = (birthdate_obj - datetime.now()).days
+                        if days < 0:
+                            childbirthdatereliability = 4
+                        else:
+                            childbirthdatereliability = 0
+                    except Exception:
+                        childbirthdatereliability = 0
+                
                 main_profile_update = {
                     "gg_hospital": latest_child_data.get("gg_hospital"),
                     "gg_child_delivery_type": latest_child_data.get("gg_child_delivery_type"),
                     "gg_milk_currently_consuming": latest_child_data.get("gg_milk_currently_consuming"),
-                    "child_birthdatereliability": latest_child_data.get("child_birthdatereliability")
+                    "child_birthdatereliability": childbirthdatereliability
                 }
                 
                 # อัพเดท lookup values ตามความเหมาะสม
                 # self.parent.update_sd_lookup(doc, None)
                 
                 # อัพเดทข้อมูล main profile
-                doc = frappe.get_doc("ETL Main Profile", profile_id)
-                doc.update(main_profile_update)
-                doc.save(ignore_permissions=True)
+                profile_doc.update(main_profile_update)
+                profile_doc.save(ignore_permissions=True)
             
             # 3. ดึงข้อมูลแคมเปญจาก IC360
             campaign_query = """
@@ -899,7 +1113,7 @@ class IC360Processor:
                     "campaign_id": f"{campaign_data.get('application_code')}_{campaign_data.get('internal_id')}",
                     "application_code": campaign_data.get("application_code"),
                     "internal_id": campaign_data.get("internal_id"),
-                    "internal_alternate_id": campaign_data.get("internal_alternate_id"),
+                    "internal_alternate_id": "" if campaign_data.get("internal_alternate_id") == "N/A" else campaign_data.get("internal_alternate_id"),
                     "create_date": campaign_data.get("create_dt"),
                     "last_update_date": campaign_data.get("last_upd_dt")
                 }
@@ -1046,125 +1260,7 @@ class IC360Processor:
                     consent_ids.append(consent_doc.name)
             
             # ก่อนสร้าง JSON สำหรับ outbound
-            # ดึงข้อมูล consent type MARKETING จาก ETL Consent
-            marketing_consent = None
-            marketing_consents = frappe.get_all(
-                "ETL Consent",
-                filters={
-                    "contact_id": profile_id,
-                    "consent_type": "MARKETING"
-                },
-                fields=["consent_status", "consent_date", "consent_version", "is_consented"],
-                order_by="creation desc",
-                limit=1
-            )
-
-            if marketing_consents:
-                marketing_consent = marketing_consents[0]
-
-            privacy_consent = None
-            privacy_consents = frappe.get_all(
-                "ETL Consent",
-                filters={
-                    "contact_id": profile_id,
-                    "consent_type": "PRIVACY"
-                },
-                fields=["consent_status", "consent_date", "consent_version", "is_consented"],
-                order_by="creation desc",
-                limit=1
-            )
-
-            if privacy_consents:
-                privacy_consent = privacy_consents[0]
-
-            # 5. สร้าง JSON สำหรับ outbound
-            outbound_data = {
-                "uid": doc.uid or doc.contact_id,  # ใช้ uid แทน contact_id ถ้ามี
-                "firstname": doc.first_name,
-                "lastname": doc.last_name,
-                "gender": doc.gender_sd,
-                "mom_birthdate": doc.birth_date,
-                "phonenumber": doc.phone,
-                "email": doc.email,
-                "line_mid": doc.line_mid,
-                "addressline1": doc.address,
-                "region": doc.province_name,
-                "city": doc.amphur_name,
-                "addressline2": doc.sub_district_name,
-                "zip": doc.postal_code,
-                "income": doc.income,
-                "contact_source": doc.contact_source,
-                "data_source_code": doc.data_source_code,
-                "brand": doc.brand or "WYETH",
-                "status": doc.status or 1,
-                "nestle_agent_referral_code": doc.nestle_agent_referral_code,
-                "date_registration": doc.date_registration,
-                "last_updated": doc.last_updated,
-                # ใช้ข้อมูลจาก marketing_consent ถ้ามี ถ้าไม่มีให้ใช้จาก main profile
-                "Is_MKT_Subscribed": (marketing_consent.get("is_consented") if marketing_consent else doc.is_consented) or "No",
-                "MKT_Subscribed_Date": marketing_consent.get("consent_date") if marketing_consent else doc.marketing_subscribed_date,
-                "MKT_Subscribed_Version": marketing_consent.get("consent_version") if marketing_consent else doc.marketing_subscribed_version,
-              
-                "consent_date": privacy_consent.get("consent_date") if privacy_consent else None,
-                "consent_version": privacy_consent.get("consent_version") if privacy_consent else None,
-                # ฟิลด์เกี่ยวกับเด็กที่อยู่ในระดับบนสุด ไม่ได้อยู่ในอาเรย์ child
-                "child_birthdatereliability": doc.child_birthdatereliability,
-                "gg_hospital": doc.gg_hospital,
-                "gg_child_delivery_type": doc.gg_child_delivery_type,
-                "gg_milk_currently_consuming": doc.gg_milk_currently_consuming
-            }
-            
-            # เพิ่มข้อมูลเด็กทั้งหมด
-            children_data = []
-            for child_id in child_ids:
-                child_doc = frappe.get_doc("ETL Child", child_id)
-                child_data = {
-                    "child_uid": child_doc.cusid,  # เปลี่ยนจาก child_id เป็น child_uid
-                    "child_firstname": child_doc.nname,
-                    "child_birthdate": child_doc.birthdate,
-                    "child_add_date": child_doc.createdate,
-                    "pc_code": child_doc.pc_code or "-",
-                    "reason": child_doc.reason
-                }
-                children_data.append(child_data)
-            
-            if children_data:
-                outbound_data["child"] = children_data
-            
-            # เพิ่มข้อมูล campaign/externalApplication
-            campaign_data = []
-            for campaign_id in campaign_ids:
-                campaign_doc = frappe.get_doc("ETL Campaign", campaign_id)
-                campaign_item = {
-                    "applicationCode": campaign_doc.application_code,
-                    "internaIdentifier": campaign_doc.internal_id,
-                    "internalAlternateIdentifier": campaign_doc.internal_alternate_id,
-                    "createDate": campaign_doc.create_date,
-                    "lastUpdateDate": campaign_doc.last_update_date
-                }
-                campaign_data.append(campaign_item)
-            
-            if campaign_data:
-                outbound_data["externalApplication"] = campaign_data
-            
-            # บันทึก outbound data
-            # ดึงค่า webhook URL จากการตั้งค่าระบบ
-            webhook_url = frappe.db.get_single_value("DH Setting", "crm_webhook_url") or ""
-            webhook_api_key = frappe.db.get_single_value("DH Setting", "crm_api_key") or "default-key"
-
-            outbound_doc = frappe.get_doc({
-                "doctype": "DH Webhook Outbound",
-                "profile_id": profile_id,
-                "sent_to": "CRM",
-                "webhook_url": webhook_url,
-                "payload": frappe.as_json(outbound_data),
-                "headers": frappe.as_json({
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {webhook_api_key}"
-                }),
-                "status": "Pending" if webhook_url else "Draft"
-            })
-            outbound_doc.insert(ignore_permissions=True)
+            # outbound_data = self.create_outbound_data(profile_id, child_ids, campaign_ids, consent_ids)
             
             # อัพเดท sync log
             if log_id:
@@ -1172,15 +1268,15 @@ class IC360Processor:
                 log_doc.status = "Completed"
                 log_doc.total_records = 1
                 log_doc.processed_records = 1
-                log_doc.processing_result = frappe.as_json({
+                log_doc.processing_result = safe_json_dumps({
                     "profile_id": profile_id,
                     "children": child_ids,
                     "campaigns": campaign_ids,
                     "consents": consent_ids,
-                    "outbound": outbound_doc.name
+                    # "outbound": outbound_data
                 })
                 log_doc.save(ignore_permissions=True)
-            
+            self.create_outbound_data_SD(profile_id)
             return {
                 "status": "success",
                 "message": "Profile synced successfully",
@@ -1188,7 +1284,7 @@ class IC360Processor:
                 "children": child_ids,
                 "campaigns": campaign_ids,
                 "consents": consent_ids,
-                "outbound": outbound_doc.name
+                # "outbound": outbound_data
             }
             
         except Exception as e:
@@ -1209,121 +1305,3 @@ class IC360Processor:
         finally:
             # ปิดการเชื่อมต่อ
             self.client.disconnect()
-
-    # def update_consent(self, consent_data):
-    #     """อัพเดทข้อมูลความยินยอมใน IC360"""
-    #     try:
-    #         # ตรวจสอบความถูกต้องของข้อมูล
-    #         if not validate_consent_db_update(consent_data):
-    #             return {"status": "error", "message": "Invalid consent data for IC360 update"}
-            
-    #         # เชื่อมต่อ IC360 database
-    #         if not self.client.connect():
-    #             return {"status": "error", "message": "Failed to connect to IC360 database"}
-            
-    #         # แปลงข้อมูลสำหรับการอัพเดท
-    #         if consent_data.get("consent_type") == "MARKETING":
-    #             # สร้างข้อมูลสำหรับความยินยอมทางการตลาด
-    #             consent_ic360_data = transform_marketing_consent_for_ic360(consent_data)
-                
-    #             # ตรวจสอบว่ามีข้อมูลความยินยอมทางการตลาดอยู่แล้วหรือไม่
-    #             check_query = """
-    #                 SELECT contact_id 
-    #                 FROM nl_marketing_consent 
-    #                 WHERE contact_id = %(contact_id)s
-    #                 AND channel = %(channel)s
-    #             """
-    #             check_params = {
-    #                 "contact_id": consent_ic360_data.get("contact_id"),
-    #                 "channel": consent_ic360_data.get("channel")
-    #             }
-    #             check_result = self.client.execute_query(check_query, check_params)
-                
-    #             if check_result and len(check_result) > 0:
-    #                 # อัพเดทความยินยอมทางการตลาดที่มีอยู่แล้ว
-    #                 update_query = """
-    #                     UPDATE nl_marketing_consent 
-    #                     SET consent_marketing = %(consent_marketing)s,
-    #                         consent_marketing_dt = %(consent_marketing_dt)s,
-    #                         consent_version = %(consent_version)s,
-    #                         last_upd_dt = NOW()
-    #                     WHERE contact_id = %(contact_id)s
-    #                     AND channel = %(channel)s
-    #                 """
-    #                 self.client.execute_query(update_query, consent_ic360_data)
-    #             else:
-    #                 # เพิ่มความยินยอมทางการตลาดใหม่
-    #                 insert_query = """
-    #                     INSERT INTO nl_marketing_consent (
-    #                         contact_id, channel, consent_marketing,
-    #                         consent_marketing_dt, consent_version,
-    #                         create_dt, last_upd_dt
-    #                     ) VALUES (
-    #                         %(contact_id)s, %(channel)s, %(consent_marketing)s,
-    #                         %(consent_marketing_dt)s, %(consent_version)s,
-    #                         NOW(), NOW()
-    #                     )
-    #                 """
-    #                 self.client.execute_query(insert_query, consent_ic360_data)
-                    
-    #             result = {"status": "success", "message": "IC360 marketing consent updated successfully"}
-                    
-    #         elif consent_data.get("consent_type") == "PRIVACY":
-    #             # สร้างข้อมูลสำหรับความยินยอมนโยบายความเป็นส่วนตัว
-    #             consent_ic360_data = transform_primary_consent_for_ic360(consent_data)
-            
-    #             # ตรวจสอบว่ามีข้อมูลความยินยอมนโยบายความเป็นส่วนตัวอยู่แล้วหรือไม่
-    #             check_query = """
-    #                 SELECT contact_id 
-    #                 FROM nl_primary_consent 
-    #                 WHERE contact_id = %(contact_id)s
-    #                 AND channel = %(channel)s
-    #             """
-    #             check_params = {
-    #                 "contact_id": consent_ic360_data.get("contact_id"),
-    #                 "channel": consent_ic360_data.get("channel")
-    #             }
-    #             check_result = self.client.execute_query(check_query, check_params)
-                
-    #             if check_result and len(check_result) > 0:
-    #                 # อัพเดทความยินยอมนโยบายความเป็นส่วนตัวที่มีอยู่แล้ว
-    #                 update_query = """
-    #                     UPDATE nl_primary_consent 
-    #                     SET consent_privacy_13y = %(consent_privacy_13y)s,
-    #                         privacy_13y_dt = %(privacy_13y_dt)s,
-    #                         consent_version = %(consent_version)s,
-    #                         last_upd_dt = NOW()
-    #                     WHERE contact_id = %(contact_id)s
-    #                     AND channel = %(channel)s
-    #                 """
-    #                 self.client.execute_query(update_query, consent_ic360_data)
-    #             else:
-    #                 # เพิ่มความยินยอมนโยบายความเป็นส่วนตัวใหม่
-    #                 insert_query = """
-    #                     INSERT INTO nl_primary_consent (
-    #                         contact_id, register_dt, channel,
-    #                         consent_privacy_13y, privacy_13y_dt, consent_version,
-    #                         create_dt, last_upd_dt
-    #                     ) VALUES (
-    #                         %(contact_id)s, NOW(), %(channel)s,
-    #                         %(consent_privacy_13y)s, %(privacy_13y_dt)s, %(consent_version)s,
-    #                         NOW(), NOW()
-    #                     )
-    #                 """
-    #                 self.client.execute_query(insert_query, consent_ic360_data)
-                    
-    #             result = {"status": "success", "message": "IC360 privacy consent updated successfully"}
-                
-    #         else:
-    #             result = {"status": "error", "message": "Unknown consent type"}
-                
-    #     except Exception as e:
-    #         frappe.log_error(message=f"IC360 consent update error: {str(e)}", title="IC360 Consent Update Error")
-    #         result = {"status": "error", "message": str(e)}
-            
-    #     finally:
-    #         # ปิดการเชื่อมต่อ
-    #         self.client.disconnect()
-                
-    #     return result
-            

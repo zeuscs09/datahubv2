@@ -151,6 +151,22 @@ app_license = "mit"
 # 	],
 # }
 
+scheduler_events = {
+    "cron": {
+        "*/2 * * * *": [
+            "datahubv2.core.job.send_webhook_job_async"
+        ],
+        "*/2 * * * *": [
+            "datahubv2.core.job.sync_from_ic360_job"
+        ]
+    },
+    # "hourly": [
+    #     "datahubv2.core.hook.cleanup_old_webhooks"
+    # ],
+    "hourly": [
+        "datahubv2.core.hook.retry_failed_webhooks"
+    ]
+}
 # Testing
 # -------
 

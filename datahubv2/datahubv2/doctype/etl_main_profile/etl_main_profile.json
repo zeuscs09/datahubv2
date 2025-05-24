@@ -92,14 +92,12 @@
   {
    "fieldname": "gender",
    "fieldtype": "Data",
-   "label": "Gender",
-   "options": "M\nF"
+   "label": "Gender"
   },
   {
    "fieldname": "gender_sd",
    "fieldtype": "Data",
-   "label": "Gender (SD)",
-   "options": "M\nF"
+   "label": "Gender (SD)"
   },
   {
    "fieldname": "birth_date",
@@ -313,7 +311,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-12 12:22:59.752007",
+ "modified": "2025-05-24 06:45:23.379381",
  "modified_by": "Administrator",
  "module": "Datahubv2",
  "name": "ETL Main Profile",

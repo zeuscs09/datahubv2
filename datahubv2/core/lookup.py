@@ -62,7 +62,10 @@ def update_sd_lookup(main_profile, child_profile):
         child_profile.child_birthdatereliability = get_lookup_data("IC360", "NL_MOTHERSTAGE", child_profile.mother_stage)
     
         if child_profile.lastpro and child_profile.lastformula:
-            lastpro_key = child_profile.lastpro + "-" + child_profile.lastformula
+            # แปลงเป็น string เพื่อป้องกันข้อผิดพลาดในการรวม string
+            lastpro_str = str(child_profile.lastpro) if child_profile.lastpro is not None else ""
+            lastformula_str = str(child_profile.lastformula) if child_profile.lastformula is not None else ""
+            lastpro_key = lastpro_str + "-" + lastformula_str
             child_profile.gg_milk_currently_consuming = get_lookup_formula("IC360", lastpro_key)
         
         child_profile.save(ignore_permissions=True)
