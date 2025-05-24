@@ -153,7 +153,7 @@ app_license = "mit"
 
 scheduler_events = {
     "cron": {
-        "*/2 * * * *": [
+        "*/1 * * * *": [
             "datahubv2.core.job.send_webhook_job_async"
         ],
         "*/2 * * * *": [
