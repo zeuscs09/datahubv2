@@ -49,15 +49,16 @@ def sync_from_ic360_job():
 def sync_single_ic360(contact_id, log_name=None):
     """ซิงค์ข้อมูลจาก IC360 รายการเดียว (สำหรับใช้ใน queue)"""
     try:
-        print(f"Syncing IC360 for contact {contact_id} log_name: {log_name}")
+
         frappe.log_error(message=f"Syncing IC360 for contact {contact_id} log_name: {log_name}", title="sync_single_ic360")
         processor = DataHubProcessor()
         result = processor.sync_from_ic360(contact_id, "JOB")
         
         # อัพเดทสถานะ log ถ้ามี
         if log_name:
+            
             log_doc = frappe.get_doc("DH IC360Log", log_name)
-            log_doc.is_sync = "True"
+            log_doc.is_sync = True
             log_doc.sync_result = frappe.as_json(result)
             log_doc.save(ignore_permissions=True)
             
@@ -67,7 +68,7 @@ def sync_single_ic360(contact_id, log_name=None):
         # อัพเดทสถานะ error ถ้ามี
         if log_name:
             log_doc = frappe.get_doc("DH IC360Log", log_name)
-            log_doc.is_sync = "False"
+            log_doc.is_sync = False
             log_doc.sync_result = frappe.as_json({"status": "error", "message": str(e)})
             log_doc.save(ignore_permissions=True)
         raise e

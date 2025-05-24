@@ -1,5 +1,6 @@
 import frappe
 import json
+import uuid
 from datetime import datetime, date
 from ..validator import (
     validate_profile_db_update, validate_child_db_update, 
@@ -917,6 +918,8 @@ class IC360Processor:
                 "date_registration": profile_data.get("register_date"),
                 "last_updated": profile_data.get("last_upd_dt")
             }
+            if not main_profile_data.get("uid"):
+                main_profile_data["uid"] = uuid.uuid4()
             
             # ค้นหา profile ใน DataHub
             existing_profile = frappe.get_all(
