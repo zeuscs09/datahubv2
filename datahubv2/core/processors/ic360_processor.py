@@ -656,7 +656,7 @@ class IC360Processor:
                     "contact_id": profile_id,
                     "consent_type": "PRIVACY"
                 },
-                fields=["consent_date"],
+                fields=["consent_date","consent_version"],
                 order_by="creation desc",
                 limit=1
             )
@@ -672,7 +672,7 @@ class IC360Processor:
                     "contact_id": profile_id,
                     "consent_type": "MARKETING"
                 },
-                fields=["is_consented"],
+                fields=["is_consented","consent_date","consent_version"],
                 order_by="creation desc",
                 limit=1
             )
@@ -775,10 +775,10 @@ class IC360Processor:
             for child in childs:
                 child_doc = frappe.get_doc("ETL Child", child.name)
                 child_data = {
-                    "child_uid": child_doc.cusid,  # เปลี่ยนจาก child_id เป็น child_uid
+                    # "child_uid": child_doc.cusid,  # เปลี่ยนจาก child_id เป็น child_uid
                     "child_firstname": child_doc.nname,
                     "child_birthdate": child_doc.birthdate,
-                    "child_add_date": child_doc.createdate,
+                    "child_add_date": child_doc.receivedate,
                     "pc_code": child_doc.pc_code or "-",
                     "reason": child_doc.reason
                 }
@@ -862,7 +862,7 @@ class IC360Processor:
                     "contact_id": profile_id,
                     "consent_type": "PRIVACY"
                 },
-                fields=["consent_date"],
+                fields=["consent_date","consent_version"],
                 order_by="creation desc",
                 limit=1
             )
@@ -878,7 +878,7 @@ class IC360Processor:
                     "contact_id": profile_id,
                     "consent_type": "MARKETING"
                 },
-                fields=["is_consented"],
+                fields=["is_consented","consent_date","consent_version"],
                 order_by="creation desc",
                 limit=1
             )
@@ -907,7 +907,7 @@ class IC360Processor:
                         OR category_desc LIKE %s
                         OR category_desc LIKE %s
                     )
-                    AND l3.formula_name LIKE %s
+                    OR l3.formula_name LIKE %s
                     AND affected_contact_id = %s
                 """
                 
@@ -1145,9 +1145,7 @@ class IC360Processor:
                 "date_registration": profile_data.get("register_date"),
                 "last_updated": profile_data.get("last_upd_dt")
             }
-            if not main_profile_data.get("uid"):
-                main_profile_data["uid"] = uuid.uuid4()
-            
+          
             # ค้นหา profile ใน DataHub
             existing_profile = frappe.get_all(
                 "ETL Main Profile",
@@ -1159,9 +1157,14 @@ class IC360Processor:
                 # อัพเดท profile ที่มีอยู่
                 doc = frappe.get_doc("ETL Main Profile", existing_profile[0].name)
                 doc.update(main_profile_data)
+                if doc.uid == "":
+                    doc.uid = uuid.uuid4()
                 doc.save(ignore_permissions=True)
                 profile_id = doc.name
             else:
+                if not main_profile_data.get("uid"):
+                    main_profile_data["uid"] = uuid.uuid4()
+            
                 # สร้าง profile ใหม่
                 doc = frappe.get_doc({
                     "doctype": "ETL Main Profile",
