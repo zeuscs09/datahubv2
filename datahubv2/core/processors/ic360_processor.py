@@ -680,53 +680,7 @@ class IC360Processor:
             if marketing_consents:
                 marketing_consent = marketing_consents[0]
             
-            # ตรวจสอบ group จาก IC360 incident data
-            group_value = "Normal"  # default value
-            activity_value = ""  # default value
-            try:
-                # Query รวม: ตรวจสอบจำนวน records และดึง activity details
-                group_query = """
-                    SELECT COUNT(*) as count_records,
-                           STRING_AGG(DISTINCT a.desc_detail, '; ') as activity_detail
-                    FROM ks_incident a
-                    LEFT JOIN ks_lookup l0 ON a.inc_status_id = l0.code_id AND l0.table_name='INCIDENT_STATUS'
-                    LEFT JOIN ks_lookup l1 ON a.contact_channel_id = l1.code_id AND l1.table_name='CONTACT_CHANNEL'
-                    LEFT JOIN nl_ks_incident ks1 ON a.incident_id = ks1.incident_id
-                    LEFT JOIN nl_product l2 ON CAST(ks1.productid as character varying) = l2.productid
-                    LEFT JOIN nl_formula l3 ON CAST(ks1.formulaid as character varying) = l3.formulaid
-                    WHERE 
-                    (
-                        category_desc LIKE %s
-                        OR category_desc LIKE %s
-                        OR category_desc LIKE %s
-                        OR category_desc LIKE %s
-                    )
-                    AND l3.formula_name LIKE %s
-                    AND affected_contact_id = %s
-                """
-                
-                query_params = [
-                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ผดผื่น/ผิวลอก/ไข|%',
-                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ท้องเสีย/ถ่ายเหลว|%',
-                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|หวัด/ไอ/มีน้ำมูก/หายใจครืดคราด|%',
-                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|อาการแพ้นมวัว|%',
-                    '%PRO HA%',
-                    profile_doc.contact_id
-                ]
-                
-                # เชื่อมต่อ IC360 database เพื่อ query
-                if self.client.connect():
-                    group_result = self.client.execute_query(group_query, query_params)
-                    if group_result and len(group_result) > 0:
-                        if group_result[0].get("count_records", 0) > 0:
-                            group_value = "HA"
-                        activity_value = group_result[0].get("activity_detail", "") or ""
-                    self.client.disconnect()
-                        
-            except Exception as e:
-                frappe.log_error(message=f"Error checking group data: {str(e)}", title="Group Check Error")
-                # ใช้ default value "Normal" และ "" ถ้า error
-            
+                 
             # สร้าง JSON สำหรับ outbound
             outbound_data = {
                 "uid": profile_doc.uid or profile_doc.contact_id,  # ใช้ uid แทน contact_id ถ้ามี
@@ -771,7 +725,7 @@ class IC360Processor:
             
             # เพิ่มข้อมูลเด็กทั้งหมด
             children_data = []
-            childs = frappe.get_all("ETL Child", filters={"motherid": profile_id})
+            childs = frappe.get_all("ETL Child", filters={"motherid": profile_id}, order_by="birthdate asc")
             for child in childs:
                 child_doc = frappe.get_doc("ETL Child", child.name)
                 child_data = {
@@ -783,7 +737,21 @@ class IC360Processor:
                     "reason": child_doc.reason
                 }
                 children_data.append(child_data)
-            
+            last_child = children_data[-1]
+            child_birthdatereliability = ""
+            if last_child.get("child_birthdate"):
+                try:
+                    from datetime import datetime
+                    birthdate_obj = datetime.strptime(str(last_child.get("child_birthdate")), "%Y-%m-%d")
+                    days = (birthdate_obj - datetime.now()).days
+                    if days < 0:
+                        child_birthdatereliability = "0"
+                    else:
+                        child_birthdatereliability = "4"
+                except Exception:
+                    child_birthdatereliability = "" 
+                    
+            outbound_data["child_birthdatereliability"] = child_birthdatereliability
             if children_data:
                 outbound_data["child"] = children_data
             
@@ -889,50 +857,59 @@ class IC360Processor:
             # ตรวจสอบ group จาก IC360 incident data
             group_value = "Normal"  # default value
             activity_value = ""  # default value
-            try:
-                # Query รวม: ตรวจสอบจำนวน records และดึง activity details
-                group_query = """
-                    SELECT COUNT(*) as count_records,
-                           STRING_AGG(DISTINCT a.desc_detail, '; ') as activity_detail
-                    FROM ks_incident a
-                    LEFT JOIN ks_lookup l0 ON a.inc_status_id = l0.code_id AND l0.table_name='INCIDENT_STATUS'
-                    LEFT JOIN ks_lookup l1 ON a.contact_channel_id = l1.code_id AND l1.table_name='CONTACT_CHANNEL'
-                    LEFT JOIN nl_ks_incident ks1 ON a.incident_id = ks1.incident_id
-                    LEFT JOIN nl_product l2 ON CAST(ks1.productid as character varying) = l2.productid
-                    LEFT JOIN nl_formula l3 ON CAST(ks1.formulaid as character varying) = l3.formulaid
-                    WHERE 
-                    (
-                        category_desc LIKE %s
-                        OR category_desc LIKE %s
-                        OR category_desc LIKE %s
-                        OR category_desc LIKE %s
-                    )
-                    OR l3.formula_name LIKE %s
-                    AND affected_contact_id = %s
-                """
-                
-                query_params = [
-                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ผดผื่น/ผิวลอก/ไข|%',
-                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ท้องเสีย/ถ่ายเหลว|%',
-                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|หวัด/ไอ/มีน้ำมูก/หายใจครืดคราด|%',
-                    '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|อาการแพ้นมวัว|%',
-                    '%PRO HA%',
-                    profile_doc.contact_id
-                ]
-                
-                # เชื่อมต่อ IC360 database เพื่อ query
-                if self.client.connect():
-                    group_result = self.client.execute_query(group_query, query_params)
-                    frappe.log_error(message=f"Group result: {group_result}", title="Group Result")
-                    if group_result and len(group_result) > 0:
-                        if group_result[0].get("count_records", 0) > 0:
-                            group_value = "HA"
-                        activity_value = group_result[0].get("activity_detail", "") or ""
-                    self.client.disconnect()
-                        
-            except Exception as e:
-                frappe.log_error(message=f"Error checking group data: {str(e)}", title="Group Check Error")
-                # ใช้ default value "Normal" และ "" ถ้า error
+            
+            if (profile_doc.gg_milk_currently_consuming and "PRO HA" in profile_doc.gg_milk_currently_consuming):   
+                group_value = "HA"
+            else: 
+                try:
+                    # Query รวม: ตรวจสอบจำนวน records และดึง activity details
+                    incident_query = """
+                        SELECT category_desc
+                        FROM ks_incident a
+                        WHERE 
+                        (
+                            category_desc LIKE %s
+                            OR category_desc LIKE %s
+                            OR category_desc LIKE %s
+                            OR category_desc LIKE %s
+                        )
+                        AND affected_contact_id = %s
+                        order by a.incident_dt desc
+                        limit 1
+                    """
+                    
+                    query_params = [
+                        '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ผดผื่น/ผิวลอก/ไข|%',
+                        '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|ท้องเสีย/ถ่ายเหลว|%',
+                        '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|หวัด/ไอ/มีน้ำมูก/หายใจครืดคราด|%',
+                        '%|แม่ให้นมบุตร  (0 - 12 เดือน)|ปรึกษาสุขภาพ|อาการแพ้นมวัว|%',
+                        profile_doc.contact_id
+                    ]
+                    
+                    
+                    # เชื่อมต่อ IC360 database เพื่อ query
+                    if self.client.connect():
+                        group_result = self.client.execute_query(incident_query, query_params)
+                        frappe.log_error(message=f"Group result: {group_result}", title="Group Result")
+                        if group_result and len(group_result) > 0:
+                            if group_result[0].get("count_records", 0) > 0:
+                                group_value = "HA"
+                            # แยกเอาส่วนสุดท้ายของ category_desc หลังจาก split ด้วย "|"
+                            category_desc = group_result[0].get("category_desc", "") or ""
+                            if category_desc and "|" in category_desc:
+                                # แยกด้วย | และเอาส่วนที่ไม่ว่างส่วนสุดท้าย
+                                parts = [part.strip() for part in category_desc.split("|") if part.strip()]
+                                if parts:
+                                    activity_value = parts[-1]  # เอาส่วนสุดท้าย
+                                else:
+                                    activity_value = category_desc
+                            else:
+                                activity_value = category_desc
+                        self.client.disconnect()
+                            
+                except Exception as e:
+                    frappe.log_error(message=f"Error checking group data: {str(e)}", title="Group Check Error")
+                    # ใช้ default value "Normal" และ "" ถ้า error
             
             # สร้าง JSON สำหรับ outbound CN
             outbound_data = {
@@ -964,9 +941,9 @@ class IC360Processor:
                         birthdate_obj = datetime.strptime(str(child_doc.birthdate), "%Y-%m-%d")
                         days = (birthdate_obj - datetime.now()).days
                         if days < 0:
-                            child_birthdatereliability = "4"
-                        else:
                             child_birthdatereliability = "0"
+                        else:
+                            child_birthdatereliability = "4"
                     except Exception:
                         child_birthdatereliability = ""
                 
