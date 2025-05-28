@@ -719,8 +719,7 @@ class IC360Processor:
                 "child_birthdatereliability": getattr(profile_doc, 'child_birthdatereliability', None),
                 "gg_hospital": getattr(profile_doc, 'gg_hospital', None),
                 "gg_child_delivery_type": getattr(profile_doc, 'gg_child_delivery_type', None),
-                "gg_milk_currently_consuming": getattr(profile_doc, 'gg_milk_currently_consuming', None),
-                "activity": activity_value
+                "gg_milk_currently_consuming": getattr(profile_doc, 'gg_milk_currently_consuming', None)
             }
             
             # เพิ่มข้อมูลเด็กทั้งหมด
