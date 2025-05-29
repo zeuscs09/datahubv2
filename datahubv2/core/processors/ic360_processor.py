@@ -1180,7 +1180,7 @@ class IC360Processor:
                 doc.insert(ignore_permissions=True)
                 profile_id = doc.name
             
-            # profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
+            profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
             # 2. ดึงข้อมูลเด็กจาก IC360
             child_query = """
                 SELECT 
