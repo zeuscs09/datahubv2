@@ -51,6 +51,7 @@ def transform_child_data(data, parent_id=None):
     """แปลงข้อมูลเด็กจาก JSON ให้เข้ากับโครงสร้าง ETL Child"""
     return {
         # Basic Info
+        "child_uid": data.get("child_uid"),
         "cusid": data.get("child_id"),
         "motherid": parent_id,  # motherid ใช้เชื่อมโยงกับ ETL Main Profile
         "fname": data.get("child_firstname"),
