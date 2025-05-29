@@ -3,10 +3,10 @@ from frappe.model.document import Document
 
 class ETLMainProfile(Document):
     def validate(self):
-        self.validate_required_fields()
-        self.validate_data_types()
-        self.set_default_values()
-
+        # self.validate_required_fields()
+        # self.validate_data_types()
+        # self.set_default_values()
+        pass
     def validate_required_fields(self):
         required_fields = ['contact_id', 'first_name', 'last_name']
         for field in required_fields:

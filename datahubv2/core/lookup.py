@@ -66,7 +66,8 @@ def update_sd_lookup(main_profile, child_profile):
             lastpro_str = str(child_profile.lastpro) if child_profile.lastpro is not None else ""
             lastformula_str = str(child_profile.lastformula) if child_profile.lastformula is not None else ""
             lastpro_key = lastpro_str + "-" + lastformula_str
+            frappe.log_error(message=f"lastpro_key: {lastpro_key}", title="lastpro_key")
             child_profile.gg_milk_currently_consuming = get_lookup_formula("IC360", lastpro_key).value
-        
+        frappe.log_error(message=f"child_profile_after_lookup: {child_profile.gg_milk_currently_consuming}", title="child_profile_after_lookup")
         child_profile.save(ignore_permissions=True)
     

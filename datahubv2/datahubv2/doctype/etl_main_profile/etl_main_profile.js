@@ -14,17 +14,5 @@ frappe.ui.form.on('ETL Main Profile', {
         }
     },
 
-    contact_id: function(frm) {
-        // Auto-generate contact_id if empty
-        if (!frm.doc.contact_id) {
-            frm.set_value('contact_id', frappe.utils.get_random(10));
-        }
-    },
-
-    gender: function(frm) {
-        // Sync gender_sd with gender
-        if (frm.doc.gender) {
-            frm.set_value('gender_sd', frm.doc.gender);
-        }
-    }
+  
 }); 

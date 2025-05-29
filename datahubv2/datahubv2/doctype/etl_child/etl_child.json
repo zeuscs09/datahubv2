@@ -9,6 +9,7 @@
  "field_order": [
   "basic_info",
   "cusid",
+  "child_uid",
   "motherid",
   "fname",
   "lname",
@@ -288,11 +289,16 @@
   {
    "fieldname": "column_break_nbar",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "child_uid",
+   "fieldtype": "Data",
+   "label": "Child UID"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-04 12:46:27.017401",
+ "modified": "2025-05-29 23:01:33.283785",
  "modified_by": "Administrator",
  "module": "Datahubv2",
  "name": "ETL Child",

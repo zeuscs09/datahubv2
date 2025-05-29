@@ -290,7 +290,7 @@ class DataHubProcessor:
     
     def sync_from_ic360(self, profile_id=None, sync_type="MANUAL"):
         """ซิงค์ข้อมูลจาก IC360 ไปยัง DataHub"""
-        return self.ic360_processor.sync_from_ic360(profile_id)
+        return self.ic360_processor.sync_from_ic360(profile_id, sync_type)
     
     def create_sync_log(self, sync_type, raw_data, status="Pending"):
         """สร้างบันทึกการซิงค์"""

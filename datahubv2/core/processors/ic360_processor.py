@@ -1006,11 +1006,11 @@ class IC360Processor:
             profile_query = """
                 SELECT 
                     c.contact_id,
-                    c.first_name,
-                    c.last_name,
+                    COALESCE(NULLIF(c.first_name, ''), '') as first_name,
+                    COALESCE(NULLIF(c.last_name, ''), '') as last_name,
                     c.contact_no,
                     c.is_active,
-                    c.gender,
+                    COALESCE(NULLIF(c.gender, ''), '') as gender,
                     c.birth_date,
                     c.contact_type,
                     c.create_user_id,
@@ -1094,34 +1094,58 @@ class IC360Processor:
             profile_data = profile_result[0]
             
             # แปลงข้อมูลสำหรับ Main Profile
+            def clean_date_value(date_value):
+                """ทำความสะอาด date value"""
+                if not date_value:
+                    return None
+                
+                # ตรวจสอบ invalid dates
+                invalid_dates = ["0001-01-01", "1900-01-01", ""]
+                date_str = str(date_value)
+                
+                for invalid_date in invalid_dates:
+                    if invalid_date in date_str:
+                        return None
+                
+                return date_value
+
+            def clean_string_value(value, default=""):
+                """ทำความสะอาด string value"""
+                if value is None or value == "null" or value == "NULL":
+                    return default
+                return str(value)
+
             main_profile_data = {
                 "contact_id": profile_data.get("contact_id"),
                 "uid": profile_data.get("uid"),
-                "first_name": profile_data.get("first_name"),
-                "last_name": profile_data.get("last_name"),
-                "gender": profile_data.get("gender"),
-                "gender_sd": profile_data.get("gender"),
-                "birth_date": profile_data.get("birth_date"),
-                "phone": profile_data.get("mobile"),
-                "email": profile_data.get("email"),
-                "line_mid": profile_data.get("line_mid"),
-                "address": profile_data.get("addr_1"),
-                "state_code": profile_data.get("state_code"),
-                "province_name": profile_data.get("province_name"),
-                "city": profile_data.get("city"),
-                "amphur_name": profile_data.get("amphur_name"),
-                "sub_district": profile_data.get("sub_district"),
-                "sub_district_name": profile_data.get("sub_district_name"),
-                "postal_code": profile_data.get("postal_code"),
-                "income": profile_data.get("income"),
-                "contact_source": profile_data.get("contact_source"),
-                "sourceid": profile_data.get("sourceid"),
-                "data_source_code": profile_data.get("sourceid"),
-                "nestle_agent_referral_code": profile_data.get("agent_referral_code"),
+                "first_name": clean_string_value(profile_data.get("first_name")),
+                "last_name": clean_string_value(profile_data.get("last_name")),
+                "gender": clean_string_value(profile_data.get("gender")),
+                "gender_sd": clean_string_value(profile_data.get("gender")),
+                "birth_date": clean_date_value(profile_data.get("birth_date")),
+                "contact_type": clean_string_value(profile_data.get("contact_type")),
+                "phone": clean_string_value(profile_data.get("mobile")),
+                "email": clean_string_value(profile_data.get("email")),
+                "line_mid": clean_string_value(profile_data.get("line_mid")),
+                "address": clean_string_value(profile_data.get("addr_1")),
+                "state_code": clean_string_value(profile_data.get("state_code")),
+                "province_name": clean_string_value(profile_data.get("province_name")),
+                "city": clean_string_value(profile_data.get("city")),
+                "amphur_name": clean_string_value(profile_data.get("amphur_name")),
+                "sub_district": clean_string_value(profile_data.get("sub_district")),
+                "sub_district_name": clean_string_value(profile_data.get("sub_district_name")),
+                "postal_code": clean_string_value(profile_data.get("postal_code")),
+                "income": profile_data.get("income") or 0,
+                "contact_source": clean_string_value(profile_data.get("contact_source")),
+                "sourceid": clean_string_value(profile_data.get("sourceid")),
+                "data_source_code": clean_string_value(profile_data.get("sourceid")),
+                "nestle_agent_referral_code": clean_string_value(profile_data.get("agent_referral_code")),
                 "date_registration": profile_data.get("register_date"),
-                "last_updated": profile_data.get("last_upd_dt")
+                "last_updated": profile_data.get("last_upd_dt"),
+                "brand": "WYETH",
+                "status": "1"
             }
-          
+            
             # ค้นหา profile ใน DataHub
             existing_profile = frappe.get_all(
                 "ETL Main Profile",
@@ -1131,15 +1155,22 @@ class IC360Processor:
             
             if existing_profile:
                 # อัพเดท profile ที่มีอยู่
+               
                 doc = frappe.get_doc("ETL Main Profile", existing_profile[0].name)
-                doc.update(main_profile_data)
                 if doc.uid == "":
-                    doc.uid = uuid.uuid4()
+                    main_profile_data["uid"] = uuid.uuid4() if not main_profile_data.get("uid") else main_profile_data.get("uid")
+                else:
+                    main_profile_data["uid"] = doc.uid
+                    
+                frappe.log_error(message=f"main_profile_data: {main_profile_data}", title="main_profile_data")
+                doc.update(main_profile_data)
+               
                 doc.save(ignore_permissions=True)
                 profile_id = doc.name
+              
             else:
-                if not main_profile_data.get("uid"):
-                    main_profile_data["uid"] = uuid.uuid4()
+                main_profile_data["uid"] = uuid.uuid4() if not main_profile_data.get("uid") else main_profile_data.get("uid")
+                frappe.log_error(message=f"main_profile_data_new: {main_profile_data}", title="main_profile_data")
             
                 # สร้าง profile ใหม่
                 doc = frappe.get_doc({
@@ -1148,7 +1179,8 @@ class IC360Processor:
                 })
                 doc.insert(ignore_permissions=True)
                 profile_id = doc.name
-            profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
+            
+            # profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
             # 2. ดึงข้อมูลเด็กจาก IC360
             child_query = """
                 SELECT 
@@ -1259,11 +1291,11 @@ class IC360Processor:
                 
                 # อัพเดท lookup สำหรับเด็กแต่ละคน
                 update_sd_lookup(profile_doc, child_doc)
-                
+                frappe.log_error(message=f"child_doc: {child_doc.gg_milk_currently_consuming}", title="child_doc")
                 # เก็บข้อมูลเด็กคนล่าสุด
                 if not latest_child_data or (child_data.get("updatedate") and (not latest_child_data.get("updatedate") or child_data.get("updatedate") > latest_child_data.get("updatedate"))):
                     latest_child_data = child_data
-                    
+                frappe.log_error(message=f"latest_child_data: {latest_child_data}", title="latest_child_data")
             # ดึง profile document เพื่อใช้ใน update_sd_lookup
             # profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
             # update_sd_lookup(profile_doc, latest_child_data)
@@ -1272,7 +1304,9 @@ class IC360Processor:
             if latest_child_data:
                 # ถ้าคำนวนวันเกิดเด็กแล้วได้น้อยกว่า 0 ให้ระบุ 4 else 0
                 from datetime import datetime
-                child_birthdate = latest_child_data.get("birthdate")
+                lastest_child_doc=frappe.get_doc("ETL Child", latest_child_data.get("cusid"))
+                frappe.log_error(message=f"lastest_child_doc: {lastest_child_doc.gg_milk_currently_consuming}", title="lastest_child_doc>1")
+                child_birthdate = lastest_child_doc.birthdate
                 childbirthdatereliability = 0
                 if child_birthdate:
                     try:
@@ -1285,19 +1319,20 @@ class IC360Processor:
                     except Exception:
                         childbirthdatereliability = 0
                 
-                main_profile_update = {
-                    "gg_hospital": latest_child_data.get("gg_hospital"),
-                    "gg_child_delivery_type": latest_child_data.get("gg_child_delivery_type"),
-                    "gg_milk_currently_consuming": latest_child_data.get("gg_milk_currently_consuming"),
-                    "child_birthdatereliability": childbirthdatereliability
-                }
-                
-                # อัพเดท lookup values ตามความเหมาะสม
-                # self.parent.update_sd_lookup(doc, None)
-                
-                # อัพเดทข้อมูล main profile
-                profile_doc.update(main_profile_update)
-                profile_doc.save(ignore_permissions=True)
+                    main_profile_update = {
+                        "gg_hospital": lastest_child_doc.gg_hospital,
+                        "gg_child_delivery_type": lastest_child_doc.gg_child_delivery_type,
+                        "gg_milk_currently_consuming": lastest_child_doc.gg_milk_currently_consuming,
+                        "child_birthdatereliability": childbirthdatereliability
+                    }
+                    frappe.log_error(message=f"main_profile_update: {main_profile_update}", title="main_profile_update>1")
+                    # อัพเดท lookup values ตามความเหมาะสม
+                    # self.parent.update_sd_lookup(doc, None)
+                    
+                    # อัพเดทข้อมูล main profile
+                    profile_doc.update(main_profile_update)
+                    frappe.log_error(message=f"main_profile_update: {main_profile_update.get('gg_milk_currently_consuming')}", title="main_profile_update>2")
+                    profile_doc.save(ignore_permissions=True)
             
             # 3. ดึงข้อมูลแคมเปญจาก IC360
             campaign_query = """
@@ -1482,13 +1517,23 @@ class IC360Processor:
                     "children": child_ids,
                     "campaigns": campaign_ids,
                     "consents": consent_ids,
-                    # "outbound": outbound_data
                 })
                 log_doc.save(ignore_permissions=True)
-                
-            if create_hook: 
-                self.create_outbound_data_SD(profile_id)
-                self.create_outbound_data_CN(profile_id)
+            
+            # เพิ่มการ commit ข้อมูลหลักก่อน
+            frappe.db.commit()
+            
+            # สร้าง outbound data (ถ้าเกิด error ที่นี่จะไม่ส่งผลต่อข้อมูลหลัก)
+            if create_hook:
+                try:
+                    self.create_outbound_data_SD(profile_id)
+                    self.create_outbound_data_CN(profile_id)
+                except Exception as outbound_error:
+                    frappe.log_error(
+                        message=f"Outbound data creation error: {str(outbound_error)}", 
+                        title="Outbound Data Error"
+                    )
+                    # ไม่ raise error เพื่อไม่ให้ส่งผลต่อข้อมูลหลัก
                 
             return {
                 "status": "success",
@@ -1497,8 +1542,6 @@ class IC360Processor:
                 "children": child_ids,
                 "campaigns": campaign_ids,
                 "consents": consent_ids,
-               
-                # "outbound": outbound_data
             }
             
         except Exception as e:
