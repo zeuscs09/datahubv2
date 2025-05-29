@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+docker exec -it 7e17191a930f /bin/bash
+
+cd frappe-bench/
