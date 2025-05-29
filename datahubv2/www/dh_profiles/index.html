@@ -114,11 +114,11 @@
                         <tbody>
                             {% for profile in profiles %}
                             <tr>
-                                <td>{{ profile.contact_id }}</td>
                                 <td>
-                                    <a href="/dh_profile_mom?contact_id={{ profile.name }}" class="profile-link">
-                                        {{ profile.first_name }} {{ profile.last_name }}
-                                    </a>
+                                    <a href="/dh_profile_mom?contact_id={{ profile.name }}" class="profile-link">{{ profile.contact_id }}</a>
+                                </td>
+                                <td>
+                                    {{ profile.first_name }} {{ profile.last_name }}
                                 </td>
                                 <td>{{ profile.phone }}</td>
                                 <td>{{ profile.email or "-" }}</td>
