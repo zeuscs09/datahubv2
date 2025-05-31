@@ -16,6 +16,7 @@ from ..transformer import (
 )
 from ...lib.ic360.client import IC360Client
 from ...core.lookup import update_sd_lookup
+from dateutil import parser
 
 def safe_json_dumps(data, **kwargs):
     """แปลง data เป็น JSON string โดยรองรับภาษาไทยและ date/datetime objects และเอาค่า null/ว่างออก"""
@@ -1095,19 +1096,22 @@ class IC360Processor:
             
             # แปลงข้อมูลสำหรับ Main Profile
             def clean_date_value(date_value):
-                """ทำความสะอาด date value"""
+                """ใช้ dateutil - parse ได้หลาย format"""
                 if not date_value:
                     return None
                 
-                # ตรวจสอบ invalid dates
-                invalid_dates = ["0001-01-01", "1900-01-01", ""]
-                date_str = str(date_value)
-                
-                for invalid_date in invalid_dates:
-                    if invalid_date in date_str:
+                try:
+                    # dateutil สามารถ parse ได้หลาย format อัตโนมัติ
+                    dt = parser.parse(str(date_value))
+                    
+                    # เช็คช่วงปีที่สมเหตุสมผล
+                    if dt.year < 1920 or dt.year > 2030:
                         return None
-                
-                return date_value
+                        
+                    return date_value
+                    
+                except (parser.ParserError, ValueError, OverflowError):
+                    return None
 
             def clean_string_value(value, default=""):
                 """ทำความสะอาด string value"""

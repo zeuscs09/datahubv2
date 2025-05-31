@@ -50,7 +50,8 @@ class CampaignProcessor:
                         "internal_id": campaign_data["internal_id"]
                       
                     },
-                    fields=["name"]
+                    fields=["name"],
+                    order_by="create_date desc, last_update_date desc"
                 )
                 
                 if campaigns:
