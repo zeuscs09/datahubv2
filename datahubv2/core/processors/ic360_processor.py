@@ -681,7 +681,7 @@ class IC360Processor:
             if marketing_consents:
                 marketing_consent = marketing_consents[0]
             
-                 
+            
             # สร้าง JSON สำหรับ outbound
             outbound_data = {
                 "uid": profile_doc.uid or profile_doc.contact_id,  # ใช้ uid แทน contact_id ถ้ามี
@@ -774,7 +774,8 @@ class IC360Processor:
             
             # บันทึก outbound data
             # ดึงค่า webhook URL จากการตั้งค่าระบบ
-           
+            #frappe.log_error(message=f"outbound_data: {outbound_data}", title="outbound_data")
+            
             webhook_url = frappe.db.get_single_value("DH Setting", "sd_url") or ""
             headers = frappe.db.get_single_value("DH Setting", "sd_header") or "default-key"
             obj_test= {
@@ -890,7 +891,7 @@ class IC360Processor:
                     # เชื่อมต่อ IC360 database เพื่อ query
                     if self.client.connect():
                         group_result = self.client.execute_query(incident_query, query_params)
-                        frappe.log_error(message=f"Group result: {group_result}", title="Group Result")
+                        #frappe.log_error(message=f"Group result: {group_result}", title="Group Result")
                         if group_result and len(group_result) > 0:
                             if group_result[0].get("count_records", 0) > 0:
                                 group_value = "HA"
@@ -1295,11 +1296,11 @@ class IC360Processor:
                 
                 # อัพเดท lookup สำหรับเด็กแต่ละคน
                 update_sd_lookup(profile_doc, child_doc)
-                frappe.log_error(message=f"child_doc: {child_doc.gg_milk_currently_consuming}", title="child_doc")
+                #frappe.log_error(message=f"child_doc: {child_doc.gg_milk_currently_consuming}", title="child_doc")
                 # เก็บข้อมูลเด็กคนล่าสุด
                 if not latest_child_data or (child_data.get("updatedate") and (not latest_child_data.get("updatedate") or child_data.get("updatedate") > latest_child_data.get("updatedate"))):
                     latest_child_data = child_data
-                frappe.log_error(message=f"latest_child_data: {latest_child_data}", title="latest_child_data")
+                #frappe.log_error(message=f"latest_child_data: {latest_child_data}", title="latest_child_data")
             # ดึง profile document เพื่อใช้ใน update_sd_lookup
             # profile_doc = frappe.get_doc("ETL Main Profile", profile_id)
             # update_sd_lookup(profile_doc, latest_child_data)
@@ -1309,7 +1310,7 @@ class IC360Processor:
                 # ถ้าคำนวนวันเกิดเด็กแล้วได้น้อยกว่า 0 ให้ระบุ 4 else 0
                 from datetime import datetime
                 lastest_child_doc=frappe.get_doc("ETL Child", latest_child_data.get("cusid"))
-                frappe.log_error(message=f"lastest_child_doc: {lastest_child_doc.gg_milk_currently_consuming}", title="lastest_child_doc>1")
+                #frappe.log_error(message=f"lastest_child_doc: {lastest_child_doc.gg_milk_currently_consuming}", title="lastest_child_doc>1")
                 child_birthdate = lastest_child_doc.birthdate
                 childbirthdatereliability = 0
                 if child_birthdate:
@@ -1329,13 +1330,13 @@ class IC360Processor:
                         "gg_milk_currently_consuming": lastest_child_doc.gg_milk_currently_consuming,
                         "child_birthdatereliability": childbirthdatereliability
                     }
-                    frappe.log_error(message=f"main_profile_update: {main_profile_update}", title="main_profile_update>1")
+                    #frappe.log_error(message=f"main_profile_update: {main_profile_update}", title="main_profile_update>1")
                     # อัพเดท lookup values ตามความเหมาะสม
                     # self.parent.update_sd_lookup(doc, None)
                     
                     # อัพเดทข้อมูล main profile
                     profile_doc.update(main_profile_update)
-                    frappe.log_error(message=f"main_profile_update: {main_profile_update.get('gg_milk_currently_consuming')}", title="main_profile_update>2")
+                    #frappe.log_error(message=f"main_profile_update: {main_profile_update.get('gg_milk_currently_consuming')}", title="main_profile_update>2")
                     profile_doc.save(ignore_permissions=True)
             
             # 3. ดึงข้อมูลแคมเปญจาก IC360
