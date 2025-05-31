@@ -775,20 +775,25 @@ class IC360Processor:
             # บันทึก outbound data
             # ดึงค่า webhook URL จากการตั้งค่าระบบ
             #frappe.log_error(message=f"outbound_data: {outbound_data}", title="outbound_data")
-            
-            webhook_url = frappe.db.get_single_value("DH Setting", "sd_url") or ""
-            headers = frappe.db.get_single_value("DH Setting", "sd_header") or "default-key"
+            dh_setting = frappe.get_doc("DH Setting", "DH Setting")
+            webhook_url = dh_setting.sd_url or ""
+            headers = dh_setting.sd_header or "default-key"
+            sd_test=dh_setting.sd_test
+            #sd_test = frappe.get_doc("DH Setting", "DH Setting")
             obj_test= {
                 "channel_id":"CHATBOT_Master",
                 "source_id":"icc",
                 "message": "SEND SD " +  safe_json_dumps(outbound_data),
             }
+            obj_out=outbound_data
+            if sd_test:
+                obj_out=obj_test
             outbound_doc = frappe.get_doc({
                 "doctype": "DH Webhook Outbound",
                 "profile_id": profile_id,
                 "sent_to": "SD",
                 "webhook_url": webhook_url,
-                "payload": safe_json_dumps(obj_test),
+                "payload": safe_json_dumps(obj_out),
                 # "payload": safe_json_dumps(outbound_data),
                 "headers": safe_json_dumps(headers),
                 "status": "Pending" if webhook_url else "Draft"
@@ -963,19 +968,24 @@ class IC360Processor:
             
             # บันทึก outbound data
             # ดึงค่า webhook URL จากการตั้งค่าระบบ
-            webhook_url = frappe.db.get_single_value("DH Setting", "cn_url") or ""
-            headers = frappe.db.get_single_value("DH Setting", "cn_header") or "default-key"
+            dh_setting = frappe.get_doc("DH Setting", "DH Setting")
+            webhook_url = dh_setting.cn_url or ""
+            headers = dh_setting.cn_header or "default-key"
+            cn_test=dh_setting.cn_test
             obj_test= {
                 "channel_id":"CHATBOT_Master",
                 "source_id":"icc",
                 "message": "SEND CLICK NEXT " + safe_json_dumps(outbound_data),
             }
+            obj_out=outbound_data
+            if cn_test:
+                obj_out=obj_test
             outbound_doc = frappe.get_doc({
                 "doctype": "DH Webhook Outbound",
                 "profile_id": profile_id,
                 "sent_to": "CN",
                 "webhook_url": webhook_url,
-                "payload": safe_json_dumps(obj_test),
+                "payload": safe_json_dumps(obj_out),
                 # "payload": safe_json_dumps(outbound_data),
                 "headers": safe_json_dumps(headers),
                 "status": "Pending" if webhook_url else "Draft"
