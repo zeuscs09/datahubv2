@@ -47,8 +47,8 @@ class CampaignProcessor:
                     filters={
                         "contact_id": campaign_data["contact_id"],
                         "application_code": campaign_data["application_code"],
-                        "internal_id": campaign_data["internal_id"],
-                        "internal_alternate_id": campaign_data.get("internal_alternate_id") or ""
+                        "internal_id": campaign_data["internal_id"]
+                      
                     },
                     fields=["name"]
                 )

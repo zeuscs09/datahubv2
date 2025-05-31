@@ -712,7 +712,7 @@ class IC360Processor:
                 "Is_MKT_Subscribed": (marketing_consent.get("is_consented") if marketing_consent else getattr(profile_doc, 'is_consented', "No")) or "No",
                 "MKT_Subscribed_Date": marketing_consent.get("consent_date") if marketing_consent else getattr(profile_doc, 'marketing_subscribed_date', None),
                 "MKT_Subscribed_Version": marketing_consent.get("consent_version") if marketing_consent else getattr(profile_doc, 'marketing_subscribed_version', None),
-              
+                "mom_birthdate": profile_doc.birth_date,
                 "consent_date": privacy_consent.get("consent_date") if privacy_consent else None,
                 "consent_version": privacy_consent.get("consent_version") if privacy_consent else None,
                 # ฟิลด์เกี่ยวกับเด็กที่อยู่ในระดับบนสุด ไม่ได้อยู่ในอาเรย์ child
@@ -728,11 +728,11 @@ class IC360Processor:
             for child in childs:
                 child_doc = frappe.get_doc("ETL Child", child.name)
                 child_data = {
-                    # "child_uid": child_doc.cusid,  # เปลี่ยนจาก child_id เป็น child_uid
+                    "child_uid": child_doc.child_uid,  # เปลี่ยนจาก child_id เป็น child_uid
                     "child_firstname": child_doc.nname,
                     "child_birthdate": child_doc.birthdate,
                     "child_add_date": child_doc.receivedate,
-                    "pc_code": child_doc.pc_code or "-",
+                    "pc_code": "" if child_doc.pc_code == "-" or child_doc.pc_code == "null" else child_doc.pc_code,
                     "reason": child_doc.reason
                 }
                 children_data.append(child_data)
