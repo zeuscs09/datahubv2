@@ -97,9 +97,8 @@
   },
   {
    "fieldname": "gender",
-   "fieldtype": "Select",
-   "label": "Gender",
-   "options": "M\nF"
+   "fieldtype": "Data",
+   "label": "Gender"
   },
   {
    "fieldname": "birthdate",
@@ -298,7 +297,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-29 23:01:33.283785",
+ "modified": "2025-06-11 18:08:43.136155",
  "modified_by": "Administrator",
  "module": "Datahubv2",
  "name": "ETL Child",

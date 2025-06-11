@@ -898,8 +898,8 @@ class IC360Processor:
                         group_result = self.client.execute_query(incident_query, query_params)
                         #frappe.log_error(message=f"Group result: {group_result}", title="Group Result")
                         if group_result and len(group_result) > 0:
-                            if group_result[0].get("count_records", 0) > 0:
-                                group_value = "HA"
+                            
+                            group_value = "HA"
                             # แยกเอาส่วนสุดท้ายของ category_desc หลังจาก split ด้วย "|"
                             category_desc = group_result[0].get("category_desc", "") or ""
                             if category_desc and "|" in category_desc:
