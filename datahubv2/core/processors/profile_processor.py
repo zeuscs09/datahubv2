@@ -27,7 +27,14 @@ class ProfileProcessor:
         
         if existing_profile:
             # อัพเดทข้อมูลที่มีอยู่
+            if existing_profile.contact_type != "09":
+                profile_data["contact_type"] = "09"
+            else :
+                profile_data["date_registration"] = existing_profile.date_registration
+                
             profile_result = self.update_profile(existing_profile, profile_data)
+           
+    
            
         else:
             # สร้างโปรไฟล์ใหม่

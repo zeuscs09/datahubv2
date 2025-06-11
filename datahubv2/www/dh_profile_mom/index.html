@@ -293,9 +293,9 @@
                     <div class="card child-card mb-4">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span>
-                                <i class="fas fa-baby me-2"></i>{{ child.fname }} {{ child.lname }}
+                                <i class="fas fa-baby me-2"></i>{{ child.fname if child.fname else "ไม่ระบุ" }} {{ child.lname if child.lname else "ไม่ระบุ" }}
                                 {% if child.nname %}
-                                ({{ child.nname }})
+                                ({{ child.nname if child.nname else "ไม่ระบุ" }})
                                 {% endif %}
                             </span>
                             <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
