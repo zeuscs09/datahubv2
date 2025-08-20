@@ -292,10 +292,11 @@ class SDIncidentService:
                 "password": config['password']
             }
             
-            # เตรียม headers
+            # เตรียม headers ตาม curl ที่ใช้งานได้
             headers = {
                 "Content-Type": "application/json",
-                "User-Agent": "DataHub/1.0"
+                "User-Agent": "PostmanRuntime/7.39.0",
+                "Cookie": "ak_bmsc=19494F905D64A9FA8FFDD6EB922EBA78~000000000000000000000000000000~YAAQJPObenNoVrGYAQAAdj01yBwSDBCB9M/tYBp0vQZx7sH5AxYc6uugc+JDJ80BzJ6Ayfi15t8xE1kg8J3YgTH2l1Ob2kzF0sQT7E3KHzlbarlAllcwpZWywbByNKekSpHRLW/gcisvGLbFNBHT5+Vt6VDYYxuxr0h6OCTnRuwV6owCPAut+EsaNruEbz1MtfvBQE5PJelDaer/qTxepS87SNPsthKfas0WqZBZkTUBywfLhmASjJ2bN1kRPeOtjH2wzVf+7m2qwgeNfmnslCH8vzas4UWAHCUg3zDn1NfqJ0CgZElJX9D+HmLoOKbGD3PeMegjFZ801tlSHQwueXIiKVxG7BgTeQG9LHclMP09kG6NKw5o1Ws7"
             }
             
             logger.info(f"Attempting login to: {login_url}")
