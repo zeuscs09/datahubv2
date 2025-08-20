@@ -1,0 +1,99 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-07-25 12:17:22.508397",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "username",
+  "password",
+  "column_break_hqnu",
+  "token_last_updated",
+  "section_break_wgsf",
+  "sql_query",
+  "url_endpoint",
+  "chunk_size",
+  "column_break_woys",
+  "header",
+  "last_sync"
+ ],
+ "fields": [
+  {
+   "fieldname": "sql_query",
+   "fieldtype": "Code",
+   "label": "SQL Query"
+  },
+  {
+   "fieldname": "url_endpoint",
+   "fieldtype": "Data",
+   "label": "Url Endpoint"
+  },
+  {
+   "fieldname": "username",
+   "fieldtype": "Data",
+   "label": "Username"
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Data",
+   "label": "Password"
+  },
+  {
+   "fieldname": "token_last_updated",
+   "fieldtype": "Datetime",
+   "label": "Token Last Updated"
+  },
+  {
+   "fieldname": "header",
+   "fieldtype": "JSON",
+   "label": "Header"
+  },
+  {
+   "fieldname": "last_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Sync"
+  },
+  {
+   "fieldname": "chunk_size",
+   "fieldtype": "Int",
+   "label": "Chunk Size"
+  },
+  {
+   "fieldname": "column_break_hqnu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_wgsf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_woys",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-08-20 23:15:43.227104",
+ "modified_by": "Administrator",
+ "module": "Datahubv2",
+ "name": "DH Incident API Config",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

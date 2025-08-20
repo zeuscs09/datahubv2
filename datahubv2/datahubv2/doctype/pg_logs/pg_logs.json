@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-01 09:46:16.904551",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "host",
+  "port",
+  "db_name",
+  "user_name",
+  "password"
+ ],
+ "fields": [
+  {
+   "fieldname": "host",
+   "fieldtype": "Data",
+   "label": "Host"
+  },
+  {
+   "fieldname": "port",
+   "fieldtype": "Data",
+   "label": "Port"
+  },
+  {
+   "fieldname": "db_name",
+   "fieldtype": "Data",
+   "label": "Db Name"
+  },
+  {
+   "fieldname": "user_name",
+   "fieldtype": "Data",
+   "label": "User Name"
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-08-01 09:47:04.685300",
+ "modified_by": "Administrator",
+ "module": "Datahubv2",
+ "name": "PG Logs",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

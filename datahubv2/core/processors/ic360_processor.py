@@ -16,6 +16,7 @@ from ..transformer import (
 )
 from ...lib.ic360.client import IC360Client
 from ...core.lookup import update_sd_lookup
+from ...lib.pg_connect import PGLogger, log_to_postgres
 from dateutil import parser
 
 def safe_json_dumps(data, **kwargs):
@@ -1104,7 +1105,11 @@ class IC360Processor:
                 return {"status": "error", "message": "Contact not found in IC360"}
             
             profile_data = profile_result[0]
-            
+            logsobj={}
+            logsobj["main_profile"]=profile_data
+          
+            logsobj["contact_id"]=contact_id
+        
             # แปลงข้อมูลสำหรับ Main Profile
             def clean_date_value(date_value):
                 """ใช้ dateutil - parse ได้หลาย format"""
@@ -1237,7 +1242,7 @@ class IC360Processor:
             """
             
             child_result = self.client.execute_query(child_query, {"contact_id": contact_id})
-            
+            logsobj["childs"]=child_result
             # สำหรับเก็บข้อมูลเด็กคนสุดท้าย เพื่ออัพเดท main profile
             latest_child_data = None
             child_ids = []
@@ -1363,6 +1368,7 @@ class IC360Processor:
             """
             
             campaign_result = self.client.execute_query(campaign_query, {"contact_id": contact_id})
+            logsobj["campaigns"]=campaign_result
             campaign_ids = []
             
             # ประมวลผลข้อมูลแคมเปญ
@@ -1420,6 +1426,7 @@ class IC360Processor:
             """
             
             privacy_result = self.client.execute_query(privacy_query, {"contact_id": contact_id})
+            logsobj["privacy"]=privacy_result
             consent_ids = []
             
             # ประมวลผลความยินยอมนโยบายความเป็นส่วนตัว
@@ -1476,7 +1483,7 @@ class IC360Processor:
             """
             
             marketing_result = self.client.execute_query(marketing_query, {"contact_id": contact_id})
-            
+            logsobj["marketing"]=marketing_result
             # ประมวลผลความยินยอมทางการตลาด
             for marketing_data in marketing_result:
                 marketing_mapping = {
@@ -1518,6 +1525,7 @@ class IC360Processor:
                     consent_doc.insert(ignore_permissions=True)
                     consent_ids.append(consent_doc.name)
             
+            
             # ก่อนสร้าง JSON สำหรับ outbound
             # outbound_data = self.create_outbound_data(profile_id, child_ids, campaign_ids, consent_ids)
             
@@ -1537,7 +1545,11 @@ class IC360Processor:
             
             # เพิ่มการ commit ข้อมูลหลักก่อน
             frappe.db.commit()
-            
+            log_to_postgres(
+                ref_id=contact_id,
+                ref_module="ic360_sync",
+                json_data=logsobj
+            )
             # สร้าง outbound data (ถ้าเกิด error ที่นี่จะไม่ส่งผลต่อข้อมูลหลัก)
             if create_hook:
                 try:

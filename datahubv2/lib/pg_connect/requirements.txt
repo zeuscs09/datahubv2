@@ -1,0 +1,2 @@
+# PostgreSQL Connection Library Requirements
+psycopg2-binary>=2.9.0

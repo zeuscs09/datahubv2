@@ -8,7 +8,7 @@ from .processors.consent_processor import ConsentProcessor
 from .processors.ic360_processor import IC360Processor
 from .lookup import update_datahub_lookup,update_sd_lookup
 from ..lib.ic360.client import IC360Client
-
+from ..lib.pg_connect import PGLogger, log_to_postgres
 class DataHubProcessor:
     def __init__(self):
         self.profile_doctype = "ETL Main Profile"

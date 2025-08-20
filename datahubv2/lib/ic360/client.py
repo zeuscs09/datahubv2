@@ -37,6 +37,59 @@ class IC360Client:
         if self.conn:
             self.conn.close()
             
+    def test_connection(self) -> Dict:
+        """ทดสอบการเชื่อมต่อฐานข้อมูล
+        
+        Returns:
+            Dict: ผลลัพธ์การทดสอบ
+        """
+        try:
+            logger.info("IC360Client: Testing database connection")
+            
+            # ทดสอบการเชื่อมต่อ
+            if not self.connect():
+                return {
+                    'success': False,
+                    'message': 'Failed to connect to database',
+                    'connection_info': None
+                }
+            
+            # ทดสอบ query ง่ายๆ
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT 1 as test_value, NOW() as current_time")
+            result = cursor.fetchone()
+            cursor.close()
+            
+            return {
+                'success': True,
+                'message': 'Database connection successful',
+                'connection_info': {
+                    'host': self.settings.host,
+                    'database': self.settings.database,
+                    'user': self.settings.username,
+                    'port': self.settings.port,
+                    'connection_status': 'Connected',
+                    'test_query_result': result
+                }
+            }
+            
+        except Exception as e:
+            error_msg = f"Connection test failed: {str(e)}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'message': error_msg,
+                'connection_info': {
+                    'host': getattr(self.settings, 'host', 'N/A'),
+                    'database': getattr(self.settings, 'database', 'N/A'),
+                    'user': getattr(self.settings, 'username', 'N/A'),
+                    'port': getattr(self.settings, 'port', 'N/A'),
+                    'connection_status': 'Failed'
+                }
+            }
+        finally:
+            self.disconnect()
+            
     def execute_query(self, query: str, params: Union[List, Dict] = None) -> List[Dict]:
         """Execute query and return results as dict
         
@@ -49,13 +102,22 @@ class IC360Client:
         """
         cursor = None
         try:
+            logger.info(f"IC360Client: Attempting to execute query")
+            logger.info(f"IC360Client: Query length: {len(query)} characters")
+            logger.info(f"IC360Client: Query preview: {query[:200]}...")
+            
             if not self.connect():
                 raise Exception("Failed to connect to database")
                 
+            logger.info(f"IC360Client: Database connection successful")
+            logger.info(f"IC360Client: Connection closed status: {self.conn.closed}")
+            
             cursor = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            logger.info(f"IC360Client: Cursor created successfully")
             
             # แปลงค่าว่างเป็น None สำหรับฟิลด์ที่เป็น integer
             if params:
+                logger.info(f"IC360Client: Processing parameters: {type(params)}")
                 # สำหรับ dict parameters
                 if isinstance(params, dict):
                     for key, value in params.items():
@@ -66,6 +128,8 @@ class IC360Client:
                     params = [None if x == '' else x for x in params]
             
             # ตรวจสอบประเภทของพารามิเตอร์และดำเนินการตามความเหมาะสม
+            logger.info(f"IC360Client: Executing query with params: {params}")
+            
             if params is None:
                 cursor.execute(query)
             elif isinstance(params, dict):
@@ -76,16 +140,34 @@ class IC360Client:
                 # แปลงเป็นลิสต์หากไม่ใช่ dict หรือ list
                 cursor.execute(query, [None if params == '' else params])
             
+            logger.info(f"IC360Client: Query executed successfully")
+            
             if query.strip().upper().startswith('SELECT'):
+                logger.info(f"IC360Client: Fetching SELECT query results")
                 results = cursor.fetchall()
-                return [dict(row) for row in results]
+                logger.info(f"IC360Client: Raw fetchall() returned {len(results)} rows")
+                
+                if results:
+                    logger.info(f"IC360Client: Sample raw result (first row): {dict(results[0])}")
+                
+                converted_results = [dict(row) for row in results]
+                logger.info(f"IC360Client: Converted to {len(converted_results)} dict records")
+                
+                if converted_results:
+                    logger.info(f"IC360Client: Sample converted result: {converted_results[0]}")
+                else:
+                    logger.warning(f"IC360Client: No results after conversion")
+                
+                return converted_results
             else:
+                logger.info(f"IC360Client: Non-SELECT query, committing")
                 self.conn.commit()
                 return []
                 
         except Exception as e:
-            error_msg = f"Query error: {str(e)}"
+            error_msg = f"IC360Client Query error: {str(e)}"
             logger.error(error_msg)
+            logger.error(f"IC360Client: Exception type: {type(e)}")
             frappe.log_error(message=f"{error_msg}\nQuery: {query}\nParams: {params}", title="IC360 Query Error")
             if self.conn:
                 self.conn.rollback()
@@ -93,6 +175,7 @@ class IC360Client:
             
         finally:
             if cursor:
+                logger.info(f"IC360Client: Closing cursor")
                 cursor.close()
 
     def get_area_info(self, province_name: str, amphur_name: str, district_name: str) -> List[Dict]:

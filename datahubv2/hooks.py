@@ -158,7 +158,11 @@ scheduler_events = {
         ],
         "*/2 * * * *": [
             "datahubv2.core.job.sync_from_ic360_job"
-        ]
+        ],
+            "0 */2 * * *": [  # ทุก 2 ชั่วโมง
+        "datahubv2.core.sd_incident.service.sync_incidents",
+        "datahubv2.core.sd_incident.service.refresh_token_job"
+    ]
     },
     # "hourly": [
     #     "datahubv2.core.hook.cleanup_old_webhooks"
