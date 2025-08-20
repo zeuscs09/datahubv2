@@ -292,22 +292,72 @@ class SDIncidentService:
                 "password": config['password']
             }
             
-            # เตรียม headers ตาม curl ที่ใช้งานได้
+            # วิธีที่ 1: ใช้ requests.Session เพื่อจัดการ cookies
+            session = requests.Session()
+            
+            # ตั้ง User-Agent ให้เหมือน curl
+            session.headers.update({
+                "User-Agent": "PostmanRuntime/7.39.0"
+            })
+            
+            # เพิ่ม cookies แบบ manual
+            ak_bmsc_value = "19494F905D64A9FA8FFDD6EB922EBA78~000000000000000000000000000000~YAAQJPObenNoVrGYAQAAdj01yBwSDBCB9M/tYBp0vQZx7sH5AxYc6uugc+JDJ80BzJ6Ayfi15t8xE1kg8J3YgTH2l1Ob2kzF0sQT7E3KHzlbarlAllcwpZWywbByNKekSpHRLW/gcisvGLbFNBHT5+Vt6VDYYxuxr0h6OCTnRuwV6owCPAut+EsaNruEbz1MtfvBQE5PJelDaer/qTxepS87SNPsthKfas0WqZBZkTUBywfLhmASjJ2bN1kRPeOtjH2wzVf+7m2qwgeNfmnslCH8vzas4UWAHCUg3zDn1NfqJ0CgZElJX9D+HmLoOKbGD3PeMegjFZ801tlSHQwueXIiKVxG7BgTeQG9LHclMP09kG6NKw5o1Ws7"
+            session.cookies.set('ak_bmsc', ak_bmsc_value, domain='stag.smartdata.nestle.co.th')
+            
+            # เตรียม headers สำหรับ login request
             headers = {
-                "Content-Type": "application/json",
-                "User-Agent": "PostmanRuntime/7.39.0",
-                "Cookie": "ak_bmsc=19494F905D64A9FA8FFDD6EB922EBA78~000000000000000000000000000000~YAAQJPObenNoVrGYAQAAdj01yBwSDBCB9M/tYBp0vQZx7sH5AxYc6uugc+JDJ80BzJ6Ayfi15t8xE1kg8J3YgTH2l1Ob2kzF0sQT7E3KHzlbarlAllcwpZWywbByNKekSpHRLW/gcisvGLbFNBHT5+Vt6VDYYxuxr0h6OCTnRuwV6owCPAut+EsaNruEbz1MtfvBQE5PJelDaer/qTxepS87SNPsthKfas0WqZBZkTUBywfLhmASjJ2bN1kRPeOtjH2wzVf+7m2qwgeNfmnslCH8vzas4UWAHCUg3zDn1NfqJ0CgZElJX9D+HmLoOKbGD3PeMegjFZ801tlSHQwueXIiKVxG7BgTeQG9LHclMP09kG6NKw5o1Ws7"
+                "Content-Type": "application/json"
             }
             
             logger.info(f"Attempting login to: {login_url}")
+            logger.info(f"Headers: {headers}")
+            logger.info(f"Payload: {login_payload}")
             
-            # ส่ง POST request เพื่อ login
-            response = requests.post(
+            # ส่ง POST request เพื่อ login ผ่าน session
+            response = session.post(
                 login_url,
                 headers=headers,
                 json=login_payload,
-                timeout=30
+                timeout=30,
+                verify=False  # ปิด SSL verification ชั่วคราว
             )
+            
+            logger.info(f"Response status: {response.status_code}")
+            logger.info(f"Response headers: {dict(response.headers)}")
+            logger.info(f"Session cookies: {dict(session.cookies)}")
+            
+            # แสดง response text เสมอเพื่อ debug
+            try:
+                response_text = response.text[:500]  # แสดงแค่ 500 characters แรก
+                logger.info(f"Response text (first 500 chars): {response_text}")
+            except:
+                logger.info("Could not read response text")
+            
+            if response.status_code != 200:
+                logger.error(f"HTTP {response.status_code}: {response.text}")
+                # ลองใช้ data แทน json
+                logger.info("Retrying with data instead of json...")
+                
+                response = session.post(
+                    login_url,
+                    headers=headers,
+                    data=json.dumps(login_payload),
+                    timeout=30,
+                    verify=False
+                )
+                
+                logger.info(f"Retry response status: {response.status_code}")
+                try:
+                    retry_response_text = response.text[:500]
+                    logger.info(f"Retry response text (first 500 chars): {retry_response_text}")
+                except:
+                    logger.info("Could not read retry response text")
+                    
+                if response.status_code != 200:
+                    logger.error(f"Retry failed - HTTP {response.status_code}: {response.text}")
+                    
+            # ปิด session
+            session.close()
             
             # ตรวจสอบ response status
             response.raise_for_status()
