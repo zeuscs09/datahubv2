@@ -309,11 +309,15 @@ class SDIncidentService:
             logger.info(f"Headers: {headers}")
             logger.info(f"Payload: {login_payload}")
             
-            # ส่ง POST request เพื่อ login ผ่าน session
+            # เตรียม payload เป็น JSON string ตาม curl format เป๊ะ
+            json_payload = json.dumps(login_payload, separators=(',', ':'))
+            logger.info(f"JSON Payload: {json_payload}")
+            
+            # ส่ง POST request เพื่อ login ผ่าน session (ใช้ data แทน json)
             response = session.post(
                 login_url,
                 headers=headers,
-                json=login_payload,
+                data=json_payload,  # ใช้ data แทน json
                 timeout=30,
                 verify=False  # ปิด SSL verification ชั่วคราว
             )
@@ -324,33 +328,27 @@ class SDIncidentService:
             
             # แสดง response text เสมอเพื่อ debug
             try:
-                response_text = response.text[:500]  # แสดงแค่ 500 characters แรก
-                logger.info(f"Response text (first 500 chars): {response_text}")
-            except:
-                logger.info("Could not read response text")
+                response_text = response.text
+                logger.info(f"Full response text: {response_text}")
+            except Exception as e:
+                logger.error(f"Could not read response text: {e}")
             
+            if response.status_code == 403:
+                logger.error(f"403 Forbidden - วิเคราะห์ปัญหา:")
+                logger.error(f"- Response: {response.text}")
+                logger.error(f"- Request URL: {login_url}")
+                logger.error(f"- Request Headers: {headers}")
+                logger.error(f"- Request Data: {json_payload}")
+                
+                # เช็คว่า response มี error message อะไรบ้าง
+                try:
+                    error_data = response.json()
+                    logger.error(f"Error response JSON: {error_data}")
+                except:
+                    logger.error("Response is not valid JSON")
+                    
             if response.status_code != 200:
                 logger.error(f"HTTP {response.status_code}: {response.text}")
-                # ลองใช้ data แทน json
-                logger.info("Retrying with data instead of json...")
-                
-                response = session.post(
-                    login_url,
-                    headers=headers,
-                    data=json.dumps(login_payload),
-                    timeout=30,
-                    verify=False
-                )
-                
-                logger.info(f"Retry response status: {response.status_code}")
-                try:
-                    retry_response_text = response.text[:500]
-                    logger.info(f"Retry response text (first 500 chars): {retry_response_text}")
-                except:
-                    logger.info("Could not read retry response text")
-                    
-                if response.status_code != 200:
-                    logger.error(f"Retry failed - HTTP {response.status_code}: {response.text}")
                     
             # ปิด session
             session.close()
