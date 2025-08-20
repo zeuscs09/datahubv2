@@ -2,6 +2,7 @@ import frappe
 import json
 import re
 import requests
+import subprocess
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from ..helper import Helper
@@ -267,6 +268,87 @@ class SDIncidentService:
             # ถ้าเกิดข้อผิดพลาด ให้ใช้ query ต้นฉบับ
             return query
     
+    def _login_with_curl(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Fallback method ใช้ curl ผ่าน subprocess เมื่อ requests ถูก bot protection"""
+        try:
+            login_url = f"{config['url_endpoint'].rstrip('/')}/login"
+            
+            # เตรียม payload
+            payload = {
+                "username": config['username'],
+                "password": config['password']
+            }
+            
+            # สร้าง curl command
+            curl_command = [
+                'curl',
+                '--location', login_url,
+                '--header', 'Content-Type: application/json',
+                '--header', 'User-Agent: PostmanRuntime/7.39.0',
+                '--header', 'Cookie: ak_bmsc=19494F905D64A9FA8FFDD6EB922EBA78~000000000000000000000000000000~YAAQJPObenNoVrGYAQAAdj01yBwSDBCB9M/tYBp0vQZx7sH5AxYc6uugc+JDJ80BzJ6Ayfi15t8xE1kg8J3YgTH2l1Ob2kzF0sQT7E3KHzlbarlAllcwpZWywbByNKekSpHRLW/gcisvGLbFNBHT5+Vt6VDYYxuxr0h6OCTnRuwV6owCPAut+EsaNruEbz1MtfvBQE5PJelDaer/qTxepS87SNPsthKfas0WqZBZkTUBywfLhmASjJ2bN1kRPeOtjH2wzVf+7m2qwgeNfmnslCH8vzas4UWAHCUg3zDn1NfqJ0CgZElJX9D+HmLoOKbGD3PeMegjFZ801tlSHQwueXIiKVxG7BgTeQG9LHclMP09kG6NKw5o1Ws7',
+                '--data-raw', json.dumps(payload, separators=(',', ':'))
+            ]
+            
+            logger.info(f"Executing curl command for login to: {login_url}")
+            
+            # เรียก curl
+            result = subprocess.run(
+                curl_command,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                raise Exception(f"Curl failed with return code {result.returncode}: {result.stderr}")
+            
+            # แปลง response
+            response_data = json.loads(result.stdout)
+            
+            if not response_data.get('success'):
+                raise Exception(f"Login failed: {response_data.get('message', 'Unknown error')}")
+            
+            # ดึง token
+            token_data = response_data.get('token', {})
+            token = token_data.get('token')
+            
+            if not token:
+                raise Exception("ไม่พบ token ใน response จาก API")
+            
+            logger.info("Curl login successful, token received")
+            
+            return {
+                'success': True,
+                'token': token,
+                'user_info': response_data.get('user', {}),
+                'response_data': response_data
+            }
+            
+        except subprocess.TimeoutExpired:
+            error_msg = "Curl command timed out"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'message': error_msg,
+                'token': None
+            }
+        except json.JSONDecodeError:
+            error_msg = f"Invalid JSON response from curl: {result.stdout}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'message': error_msg,
+                'token': None
+            }
+        except Exception as e:
+            error_msg = f"Curl login error: {str(e)}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'message': error_msg,
+                'token': None
+            }
+    
     def login_and_get_token(self) -> Dict[str, Any]:
         """Login และดึง token จาก API
         
@@ -298,10 +380,21 @@ class SDIncidentService:
             # ล้าง cookies ของ session ให้เหมือนเริ่มต้นใหม่
             session.cookies.clear()
             
-            # เตรียม headers ตาม curl ที่ใช้งานได้ (รวม cookies)
+            # เตรียม headers ตาม curl + เพิ่ม headers เพื่อหลอก bot detection
             headers = {
                 "Content-Type": "application/json",
                 "User-Agent": "PostmanRuntime/7.39.0",
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "en-US,en;q=0.9,th;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Cache-Control": "no-cache",
+                "Pragma": "no-cache",
+                "Origin": "https://stag.smartdata.nestle.co.th",
+                "Referer": "https://stag.smartdata.nestle.co.th/",
+                "X-Requested-With": "XMLHttpRequest",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin",
                 "Cookie": "ak_bmsc=19494F905D64A9FA8FFDD6EB922EBA78~000000000000000000000000000000~YAAQJPObenNoVrGYAQAAdj01yBwSDBCB9M/tYBp0vQZx7sH5AxYc6uugc+JDJ80BzJ6Ayfi15t8xE1kg8J3YgTH2l1Ob2kzF0sQT7E3KHzlbarlAllcwpZWywbByNKekSpHRLW/gcisvGLbFNBHT5+Vt6VDYYxuxr0h6OCTnRuwV6owCPAut+EsaNruEbz1MtfvBQE5PJelDaer/qTxepS87SNPsthKfas0WqZBZkTUBywfLhmASjJ2bN1kRPeOtjH2wzVf+7m2qwgeNfmnslCH8vzas4UWAHCUg3zDn1NfqJ0CgZElJX9D+HmLoOKbGD3PeMegjFZ801tlSHQwueXIiKVxG7BgTeQG9LHclMP09kG6NKw5o1Ws7"
             }
             
@@ -334,18 +427,23 @@ class SDIncidentService:
                 logger.error(f"Could not read response text: {e}")
             
             if response.status_code == 403:
-                logger.error(f"403 Forbidden - วิเคราะห์ปัญหา:")
-                logger.error(f"- Response: {response.text}")
+                logger.error(f"403 Forbidden - Incapsula/Bot Protection detected")
+                logger.error(f"- Response: {response.text[:200]}...")
                 logger.error(f"- Request URL: {login_url}")
-                logger.error(f"- Request Headers: {headers}")
-                logger.error(f"- Request Data: {json_payload}")
                 
-                # เช็คว่า response มี error message อะไรบ้าง
+                # ลองใช้ curl ผ่าน subprocess เป็น fallback
+                logger.info("Attempting fallback with curl subprocess...")
+                
                 try:
-                    error_data = response.json()
-                    logger.error(f"Error response JSON: {error_data}")
-                except:
-                    logger.error("Response is not valid JSON")
+                    curl_result = self._login_with_curl(config)
+                    if curl_result['success']:
+                        logger.info("Curl fallback successful!")
+                        session.close()
+                        return curl_result
+                    else:
+                        logger.error(f"Curl fallback also failed: {curl_result['message']}")
+                except Exception as e:
+                    logger.error(f"Curl fallback error: {str(e)}")
                     
             if response.status_code != 200:
                 logger.error(f"HTTP {response.status_code}: {response.text}")
