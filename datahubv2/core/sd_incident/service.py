@@ -292,21 +292,17 @@ class SDIncidentService:
                 "password": config['password']
             }
             
-            # วิธีที่ 1: ใช้ requests.Session เพื่อจัดการ cookies
+            # ใช้ requests.Session และใส่ cookies ใน headers แทน
             session = requests.Session()
             
-            # ตั้ง User-Agent ให้เหมือน curl
-            session.headers.update({
-                "User-Agent": "PostmanRuntime/7.39.0"
-            })
+            # ล้าง cookies ของ session ให้เหมือนเริ่มต้นใหม่
+            session.cookies.clear()
             
-            # เพิ่ม cookies แบบ manual
-            ak_bmsc_value = "19494F905D64A9FA8FFDD6EB922EBA78~000000000000000000000000000000~YAAQJPObenNoVrGYAQAAdj01yBwSDBCB9M/tYBp0vQZx7sH5AxYc6uugc+JDJ80BzJ6Ayfi15t8xE1kg8J3YgTH2l1Ob2kzF0sQT7E3KHzlbarlAllcwpZWywbByNKekSpHRLW/gcisvGLbFNBHT5+Vt6VDYYxuxr0h6OCTnRuwV6owCPAut+EsaNruEbz1MtfvBQE5PJelDaer/qTxepS87SNPsthKfas0WqZBZkTUBywfLhmASjJ2bN1kRPeOtjH2wzVf+7m2qwgeNfmnslCH8vzas4UWAHCUg3zDn1NfqJ0CgZElJX9D+HmLoOKbGD3PeMegjFZ801tlSHQwueXIiKVxG7BgTeQG9LHclMP09kG6NKw5o1Ws7"
-            session.cookies.set('ak_bmsc', ak_bmsc_value, domain='stag.smartdata.nestle.co.th')
-            
-            # เตรียม headers สำหรับ login request
+            # เตรียม headers ตาม curl ที่ใช้งานได้ (รวม cookies)
             headers = {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "User-Agent": "PostmanRuntime/7.39.0",
+                "Cookie": "ak_bmsc=19494F905D64A9FA8FFDD6EB922EBA78~000000000000000000000000000000~YAAQJPObenNoVrGYAQAAdj01yBwSDBCB9M/tYBp0vQZx7sH5AxYc6uugc+JDJ80BzJ6Ayfi15t8xE1kg8J3YgTH2l1Ob2kzF0sQT7E3KHzlbarlAllcwpZWywbByNKekSpHRLW/gcisvGLbFNBHT5+Vt6VDYYxuxr0h6OCTnRuwV6owCPAut+EsaNruEbz1MtfvBQE5PJelDaer/qTxepS87SNPsthKfas0WqZBZkTUBywfLhmASjJ2bN1kRPeOtjH2wzVf+7m2qwgeNfmnslCH8vzas4UWAHCUg3zDn1NfqJ0CgZElJX9D+HmLoOKbGD3PeMegjFZ801tlSHQwueXIiKVxG7BgTeQG9LHclMP09kG6NKw5o1Ws7"
             }
             
             logger.info(f"Attempting login to: {login_url}")
