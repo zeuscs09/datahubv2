@@ -178,7 +178,7 @@ class SDIncidentService:
             outbound_id = self.helper.generate_code()
             
             # สร้าง webhook URL
-            webhook_url = f"{config['url_endpoint'].rstrip('/')}/ic360-incidents"
+            webhook_url = f"{config['url_endpoint'].rstrip('/')}/ic360-incident"
             
             # เพิ่มข้อมูล chunk ใน sent_to ถ้ามี
             sent_to = f"SD_Incident_{chunk_info}" if chunk_info else "SD_Incident"
