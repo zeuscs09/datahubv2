@@ -107,16 +107,69 @@ class SDIncidentService:
             logger.error(f"Error splitting data into chunks: {str(e)}")
             raise
     
-    def format_data_to_json(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """แปลงข้อมูลเป็น JSON รูปแบบที่ต้องการ"""
+    def format_data_to_json(self, data: List[Dict[str, Any]], remove_null: bool = True) -> Dict[str, Any]:
+        """แปลงข้อมูลเป็น JSON รูปแบบที่ต้องการ
+        
+        Args:
+            data: ข้อมูลที่จะแปลง
+            remove_null: ลบ null value ออกหรือไม่ (default: True)
+        """
         try:
-            return {
-                "data": data
-            }
+            if remove_null:
+                # กรอง null value ออกจากข้อมูล
+                cleaned_data = self._remove_null_values(data)
+                return {
+                    "data": cleaned_data
+                }
+            else:
+                return {
+                    "data": data
+                }
             
         except Exception as e:
             logger.error(f"Error formatting data to JSON: {str(e)}")
             raise
+    
+    def _remove_null_values(self, data):
+        """ลบ null value ออกจาก dict หรือ list แบบ recursive
+        
+        Args:
+            data: ข้อมูลที่จะทำความสะอาด (dict, list, หรือ primitive value)
+            
+        Returns:
+            ข้อมูลที่ลบ null value แล้ว
+        """
+        try:
+            if isinstance(data, dict):
+                # กรอง key-value ที่ value ไม่เป็น null, empty string, หรือ empty list
+                cleaned_dict = {}
+                for k, v in data.items():
+                    if v is not None and v != "" and v != [] and v != {}:
+                        cleaned_value = self._remove_null_values(v)
+                        # เพิ่มเฉพาะค่าที่ไม่ว่างหลังจาก clean แล้ว
+                        if cleaned_value is not None and cleaned_value != "" and cleaned_value != [] and cleaned_value != {}:
+                            cleaned_dict[k] = cleaned_value
+                return cleaned_dict
+                
+            elif isinstance(data, list):
+                # กรอง item ใน list ที่ไม่เป็น null
+                cleaned_list = []
+                for item in data:
+                    if item is not None and item != "" and item != [] and item != {}:
+                        cleaned_item = self._remove_null_values(item)
+                        # เพิ่มเฉพาะ item ที่ไม่ว่างหลังจาก clean แล้ว
+                        if cleaned_item is not None and cleaned_item != "" and cleaned_item != [] and cleaned_item != {}:
+                            cleaned_list.append(cleaned_item)
+                return cleaned_list
+                
+            else:
+                # สำหรับ primitive value (string, number, boolean)
+                return data
+                
+        except Exception as e:
+            logger.error(f"Error removing null values: {str(e)}")
+            # ถ้าเกิดข้อผิดพลาด ให้คืนค่าต้นฉบับ
+            return data
     
     def create_webhook_outbound_record(self, config: Dict[str, Any], payload: Dict[str, Any], chunk_info: str = "") -> str:
         """สร้างระเบียน DH Webhook Outbound"""
@@ -755,6 +808,119 @@ def test_ic360_connection():
             'success': False,
             'message': error_msg,
             'data': None
+        }
+
+@frappe.whitelist()
+def test_null_value_handling():
+    """ทดสอบการจัดการ null value ในฟังก์ชัน format_data_to_json
+    
+    Returns:
+        dict: ผลลัพธ์การทดสอบ
+    """
+    try:
+        service = SDIncidentService()
+        
+        # ข้อมูลทดสอบที่มี null value หลายแบบ
+        test_data = [
+            {
+                "incident_no": "INC001",
+                "phonenumber": "0812345678",
+                "cate": "Technical",
+                "subcate": None,              # null value
+                "status": "Open",
+                "product": "",                # empty string
+                "details": [],               # empty list
+                "metadata": {},              # empty dict
+                "valid_field": "Valid Data"
+            },
+            {
+                "incident_no": "INC002",
+                "phonenumber": None,         # null value
+                "cate": "General",
+                "subcate": "Payment",
+                "status": "Closed",
+                "product": "Product A",
+                "contact_info": {
+                    "email": "test@example.com",
+                    "address": None,         # null value ใน nested object
+                    "phone": "",             # empty string ใน nested object
+                    "backup_contacts": [],   # empty array ใน nested object
+                    "social_media": {
+                        "facebook": None,    # nested null
+                        "line": "line123",
+                        "twitter": ""        # nested empty string
+                    }
+                },
+                "activities": [
+                    {
+                        "id": 1,
+                        "description": "First contact",
+                        "note": None,        # null ใน array object
+                        "status": "completed"
+                    },
+                    {
+                        "id": 2,
+                        "description": "",   # empty string ใน array object
+                        "note": "Follow up needed",
+                        "attachments": []    # empty array ใน array object
+                    }
+                ]
+            },
+            None,  # null object ใน array
+            {
+                "incident_no": "",           # empty string incident_no
+                "all_null": None
+            }
+        ]
+        
+        # ทดสอบแบบกรอง null value (default)
+        cleaned_result = service.format_data_to_json(test_data, remove_null=True)
+        
+        # ทดสอบแบบไม่กรอง null value
+        uncleaned_result = service.format_data_to_json(test_data, remove_null=False)
+        
+        # นับจำนวน field ใน original vs cleaned
+        original_fields_count = 0
+        cleaned_fields_count = 0
+        
+        def count_fields(obj):
+            """นับจำนวน field ทั้งหมดใน object"""
+            count = 0
+            if isinstance(obj, dict):
+                count += len(obj)
+                for v in obj.values():
+                    count += count_fields(v)
+            elif isinstance(obj, list):
+                for item in obj:
+                    count += count_fields(item)
+            return count
+        
+        original_fields_count = count_fields(test_data)
+        cleaned_fields_count = count_fields(cleaned_result['data'])
+        
+        return {
+            'success': True,
+            'message': 'การทดสอบ null value handling สำเร็จ',
+            'test_results': {
+                'original_data_count': len(test_data),
+                'cleaned_data_count': len(cleaned_result['data']),
+                'original_fields_count': original_fields_count,
+                'cleaned_fields_count': cleaned_fields_count,
+                'fields_removed': original_fields_count - cleaned_fields_count,
+                'sample_original': test_data[:2],  # แสดงข้อมูลต้นฉบับ 2 record แรก
+                'sample_cleaned': cleaned_result['data'][:2] if cleaned_result['data'] else [],  # แสดงข้อมูลที่ clean แล้ว
+                'sample_uncleaned': uncleaned_result['data'][:2]  # แสดงข้อมูลที่ไม่ clean
+            }
+        }
+        
+    except Exception as e:
+        error_msg = f"Error testing null value handling: {str(e)}"
+        logger.error(error_msg)
+        
+        return {
+            'success': False,
+            'message': error_msg,
+            'test_results': {}
         }
 
 @frappe.whitelist()
