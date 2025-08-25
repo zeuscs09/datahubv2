@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import now_datetime, get_system_timezone
 import json
 import re
 import requests
@@ -284,11 +285,19 @@ class SDIncidentService:
         """อัพเดทเวลา last_sync ใน configuration"""
         try:
             config = frappe.get_single("DH Incident API Config")
-            config.last_sync = datetime.now()
+            
+            # ใช้ frappe.utils.now_datetime() แทน datetime.now() เพื่อให้ได้ timezone ที่ถูกต้อง
+            
+            current_time = now_datetime()
+            
+            config.last_sync = current_time
             config.save()
             frappe.db.commit()
             
             logger.info(f"Updated last_sync time to: {config.last_sync}")
+            logger.info(f"Server timezone: {get_system_timezone()}")
+            logger.info(f"Current time (frappe.utils): {current_time}")
+            logger.info(f"Current time (datetime.now): {datetime.now()}")
             
         except Exception as e:
             logger.error(f"Error updating last_sync time: {str(e)}")
@@ -808,6 +817,136 @@ def test_ic360_connection():
             'success': False,
             'message': error_msg,
             'data': None
+        }
+
+@frappe.whitelist()
+def debug_last_sync_time():
+    """Debug ปัญหา last_sync time และ timezone
+    
+    Returns:
+        dict: ข้อมูล debug เกี่ยวกับ timezone และเวลา
+    """
+    try:
+        from frappe.utils import now_datetime, now, get_system_timezone, get_time_zone, get_datetime
+        from datetime import datetime
+        
+        service = SDIncidentService()
+        config = service.get_incident_api_config()
+        
+        # ดึงข้อมูลเวลาต่างๆ
+        current_datetime_now = datetime.now()
+        current_frappe_now = now_datetime()
+        current_frappe_now_str = now()
+        
+        # ดึง timezone ต่างๆ
+        system_timezone = get_system_timezone()
+        user_timezone = get_time_zone()
+        
+        # คำนวณ timezone offset
+        utc_now = datetime.utcnow()
+        local_now = datetime.now()
+        offset_seconds = (local_now - utc_now).total_seconds()
+        offset_hours = offset_seconds / 3600
+        
+        # เปรียบเทียบกับ last_sync
+        last_sync = config.get('last_sync')
+        if last_sync:
+            if isinstance(last_sync, str):
+                # ถ้าเป็น string ลองแปลงเป็น datetime
+                try:
+                    last_sync_dt = get_datetime(last_sync)
+                except:
+                    last_sync_dt = None
+            else:
+                last_sync_dt = last_sync
+            
+            if last_sync_dt:
+                # คำนวณความต่างของเวลา
+                time_diff = current_frappe_now - last_sync_dt
+                hours_diff = time_diff.total_seconds() / 3600
+            else:
+                hours_diff = None
+        else:
+            last_sync_dt = None
+            hours_diff = None
+        
+        return {
+            'success': True,
+            'message': 'Debug last_sync time information',
+            'data': {
+                'current_times': {
+                    'datetime_now': str(current_datetime_now),
+                    'frappe_now_datetime': str(current_frappe_now),
+                    'frappe_now_string': current_frappe_now_str,
+                    'utc_now': str(utc_now)
+                },
+                'timezone_info': {
+                    'system_timezone': system_timezone,
+                    'user_timezone': user_timezone,
+                    'offset_from_utc_hours': offset_hours
+                },
+                'last_sync_info': {
+                    'last_sync_raw': str(last_sync) if last_sync else None,
+                    'last_sync_type': str(type(last_sync)),
+                    'last_sync_datetime': str(last_sync_dt) if last_sync_dt else None,
+                    'hours_since_last_sync': round(hours_diff, 2) if hours_diff is not None else None
+                },
+                'debug_recommendations': [
+                    'ตรวจสอบว่า sync process ทำงานสำเร็จหรือไม่',
+                    'ใช้ frappe.utils.now_datetime() แทน datetime.now()',
+                    'ตรวจสอบ timezone configuration ของระบบ',
+                    'ดู log ของการ sync ครั้งล่าสุด'
+                ]
+            }
+        }
+        
+    except Exception as e:
+        error_msg = f"Error debugging last_sync time: {str(e)}"
+        logger.error(error_msg)
+        
+        return {
+            'success': False,
+            'message': error_msg,
+            'data': {}
+        }
+
+@frappe.whitelist()
+def force_update_last_sync():
+    """บังคับอัพเดท last_sync เป็นเวลาปัจจุบัน
+    
+    Returns:
+        dict: ผลลัพธ์การอัพเดท
+    """
+    if not frappe.has_permission("DH Incident API Config", "write"):
+        frappe.throw("Insufficient permissions")
+    
+    try:
+        from frappe.utils import now
+        service = SDIncidentService()
+        
+        # อัพเดท last_sync
+        service.update_last_sync_time()
+        
+        # ดึงข้อมูลใหม่มาแสดง
+        config = service.get_incident_api_config()
+        
+        return {
+            'success': True,
+            'message': 'อัพเดท last_sync สำเร็จ',
+            'data': {
+                'new_last_sync': str(config['last_sync']),
+                'updated_at': now()
+            }
+        }
+        
+    except Exception as e:
+        error_msg = f"Error forcing last_sync update: {str(e)}"
+        logger.error(error_msg)
+        
+        return {
+            'success': False,
+            'message': error_msg,
+            'data': {}
         }
 
 @frappe.whitelist()
