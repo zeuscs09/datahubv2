@@ -9,6 +9,8 @@
   "password",
   "column_break_hqnu",
   "token_last_updated",
+  "proxy_server",
+  "use_proxy",
   "section_break_wgsf",
   "sql_query",
   "url_endpoint",
@@ -69,13 +71,24 @@
   {
    "fieldname": "column_break_woys",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "proxy_server",
+   "fieldtype": "Data",
+   "label": "Proxy Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_proxy",
+   "fieldtype": "Check",
+   "label": "Use Proxy"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-20 23:15:43.227104",
+ "modified": "2025-09-21 12:49:49.424766",
  "modified_by": "Administrator",
  "module": "Datahubv2",
  "name": "DH Incident API Config",

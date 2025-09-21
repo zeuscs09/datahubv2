@@ -1,6 +1,7 @@
 import frappe
 import requests
 import json
+import time
 from datetime import datetime
 
 def send_webhook_outbound(doc, method=None):
@@ -15,6 +16,98 @@ def send_webhook_outbound(doc, method=None):
                 title=f"Webhook Error - {doc.name}"
             )
 
+def get_sd_proxy_config():
+    """ดึง proxy configuration จาก DH Incident API Config สำหรับ SD webhooks"""
+    try:
+        config = frappe.get_single("DH Incident API Config")
+        return {
+            'use_proxy': config.use_proxy or 0,
+            'proxy_server': config.proxy_server or None
+        }
+    except Exception as e:
+        frappe.log_error(
+            message=f"Error getting SD proxy config: {str(e)}", 
+            title="SD Proxy Config Error"
+        )
+        return {'use_proxy': 0, 'proxy_server': None}
+
+def send_webhook_via_proxy(doc, headers, payload_data):
+    """ส่ง webhook ผ่าน proxy server สำหรับ SD"""
+    try:
+        proxy_config = get_sd_proxy_config()
+        
+        if not proxy_config.get('use_proxy') or not proxy_config.get('proxy_server'):
+            raise Exception("Proxy not configured for SD webhooks")
+        
+        # สร้าง proxy URL
+        proxy_server = proxy_config['proxy_server'].strip()
+        if proxy_server.startswith('http'):
+            proxy_url = f"{proxy_server}/proxy"
+        else:
+            proxy_url = f"http://{proxy_server}/proxy"
+        
+        frappe.log_error(
+            message=f"🔐 Sending SD webhook through proxy...\nProxy Server: {proxy_config['proxy_server']}\nTarget URL: {doc.webhook_url}", 
+            title=f"SD Webhook Proxy - {doc.name}"
+        )
+        
+        # เตรียม payload สำหรับ proxy
+        proxy_payload = {
+            "url": doc.webhook_url,
+            "method": "POST", 
+            "headers": headers,
+            "body": payload_data
+        }
+        
+        # ส่ง request ผ่าน proxy server
+        start_time = time.time()
+        response = requests.post(proxy_url, json=proxy_payload, timeout=30)
+        end_time = time.time()
+        
+        frappe.log_error(
+            message=f"⏱️ Proxy response time: {(end_time - start_time)*1000:.0f}ms\n📊 Proxy Status: {response.status_code}", 
+            title=f"SD Webhook Proxy Response - {doc.name}"
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            target_status = data.get('status_code', 0)
+            
+            if target_status == 200:
+                frappe.log_error(
+                    message=f"🎉 SD webhook sent successfully through proxy!\n🎯 Target API Status: {target_status}", 
+                    title=f"SD Webhook Success - {doc.name}"
+                )
+                
+                # สร้าง mock response object ที่มี format เหมือน requests.Response
+                class MockResponse:
+                    def __init__(self, status_code, data):
+                        self.status_code = status_code
+                        self.headers = {'content-type': 'application/json'}
+                        self._data = data
+                        
+                    def json(self):
+                        return self._data['data'] if 'data' in self._data else self._data
+                        
+                    @property 
+                    def text(self):
+                        return json.dumps(self._data)
+                
+                return MockResponse(target_status, data)
+            else:
+                error_msg = f"❌ Target API returned: {target_status}"
+                frappe.log_error(message=error_msg, title=f"SD Webhook API Error - {doc.name}")
+                raise Exception(error_msg)
+        else:
+            error_msg = f"❌ Proxy error: {response.status_code} - {response.text}"
+            frappe.log_error(message=error_msg, title=f"SD Webhook Proxy Error - {doc.name}")
+            raise Exception(error_msg)
+            
+    except Exception as e:
+        error_msg = f"❌ SD Webhook proxy request failed: {str(e)}"
+        frappe.log_error(message=error_msg, title=f"SD Webhook Proxy Failed - {doc.name}")
+        raise Exception(error_msg)
+            
 def send_webhook_data(doc):
     """ส่งข้อมูล webhook ไปยัง URL ปลายทาง"""
     try:
@@ -71,13 +164,35 @@ def send_webhook_data(doc):
         doc.sent_at = datetime.now()
         doc.save(ignore_permissions=True)
         
-        # ส่ง HTTP Request
-        response = requests.post(
-            doc.webhook_url,
-            json=payload_data,
-            headers=headers,
-            timeout=30
-        )
+        # ตรวจสอบว่าเป็น SD webhook หรือไม่ - ถ้าใช่ให้ส่งผ่าน proxy
+        if doc.sent_to and doc.sent_to.startswith("SD"):
+            frappe.log_error(
+                message=f"🔍 Detected SD webhook: {doc.sent_to} - Using proxy", 
+                title=f"SD Webhook Detected - {doc.name}"
+            )
+            
+            try:
+                # ส่งผ่าน proxy server
+                response = send_webhook_via_proxy(doc, headers, payload_data)
+            except Exception as e:
+                frappe.log_error(
+                    message=f"Proxy failed for SD webhook: {str(e)}", 
+                    title=f"SD Webhook Proxy Failed - {doc.name}"
+                )
+                raise e
+        else:
+            # ส่งตรงไป (non-SD webhooks)
+            frappe.log_error(
+                message=f"📡 Sending direct webhook: {doc.sent_to or 'Unknown'}", 
+                title=f"Direct Webhook - {doc.name}"
+            )
+            
+            response = requests.post(
+                doc.webhook_url,
+                json=payload_data,
+                headers=headers,
+                timeout=30
+            )
         
         # บันทึกผลลัพธ์
         doc.response_code = str(response.status_code)
@@ -143,6 +258,124 @@ def send_pending_webhook():
     for webhook in webhooks:
         doc = frappe.get_doc("DH Webhook Outbound", webhook.name)
         send_webhook_data(doc)
+
+@frappe.whitelist()
+def manual_send_webhook(webhook_name):
+    """API endpoint สำหรับส่ง webhook ด้วยตนเอง
+    
+    Args:
+        webhook_name (str): ชื่อ DH Webhook Outbound document
+        
+    Returns:
+        dict: ผลลัพธ์การส่ง webhook
+    """
+    if not frappe.has_permission("DH Webhook Outbound", "write"):
+        frappe.throw("Insufficient permissions")
+    
+    try:
+        # ดึง webhook document
+        doc = frappe.get_doc("DH Webhook Outbound", webhook_name)
+        
+        if not doc:
+            return {
+                'success': False,
+                'message': f'ไม่พบ webhook: {webhook_name}'
+            }
+        
+        # ตรวจสอบสถานะ - อนุญาตเฉพาะ Pending หรือ Failed
+        if doc.status not in ['Pending', 'Failed']:
+            return {
+                'success': False,
+                'message': f'ไม่สามารถส่ง webhook ที่มีสถานะ: {doc.status}'
+            }
+        
+        frappe.log_error(
+            message=f"Manual send webhook requested for: {webhook_name} (ID: {doc.outbound_id})", 
+            title=f"Manual Webhook Send - {webhook_name}"
+        )
+        
+        # ส่ง webhook
+        send_webhook_data(doc)
+        
+        # ดึงข้อมูลใหม่หลังส่ง
+        doc.reload()
+        
+        return {
+            'success': True,
+            'message': f'ส่ง webhook สำเร็จ - ID: {doc.outbound_id}',
+            'response_code': doc.response_code,
+            'sent_at': str(doc.sent_at) if doc.sent_at else None,
+            'status': doc.status
+        }
+        
+    except Exception as e:
+        error_msg = f"Error sending webhook manually: {str(e)}"
+        frappe.log_error(message=error_msg, title=f"Manual Webhook Error - {webhook_name}")
+        
+        return {
+            'success': False,
+            'message': error_msg
+        }
+
+@frappe.whitelist()
+def get_webhook_logs(webhook_name):
+    """API endpoint สำหรับดู logs ของ webhook
+    
+    Args:
+        webhook_name (str): ชื่อ DH Webhook Outbound document
+        
+    Returns:
+        dict: logs ที่เกี่ยวข้องกับ webhook นี้
+    """
+    if not frappe.has_permission("DH Webhook Outbound", "read"):
+        frappe.throw("Insufficient permissions")
+    
+    try:
+        # ดึง webhook document เพื่อใช้ outbound_id
+        doc = frappe.get_doc("DH Webhook Outbound", webhook_name)
+        
+        # ค้นหา error logs ที่เกี่ยวข้องกับ webhook นี้
+        logs = frappe.get_all(
+            "Error Log",
+            filters={
+                "title": ["like", f"%{doc.outbound_id}%"]
+            },
+            fields=["name", "title", "error", "creation"],
+            order_by="creation desc",
+            limit=20
+        )
+        
+        # เพิ่ม logs ที่เกี่ยวข้องกับ webhook name
+        name_logs = frappe.get_all(
+            "Error Log", 
+            filters={
+                "title": ["like", f"%{webhook_name}%"]
+            },
+            fields=["name", "title", "error", "creation"],
+            order_by="creation desc", 
+            limit=20
+        )
+        
+        # รวม logs และเอาซ้ำออก
+        all_logs = logs + name_logs
+        unique_logs = {log['name']: log for log in all_logs}.values()
+        sorted_logs = sorted(unique_logs, key=lambda x: x['creation'], reverse=True)
+        
+        return {
+            'success': True,
+            'logs': sorted_logs[:10],  # เอา 10 รายการล่าสุด
+            'webhook_id': doc.outbound_id
+        }
+        
+    except Exception as e:
+        error_msg = f"Error getting webhook logs: {str(e)}"
+        frappe.log_error(message=error_msg, title=f"Get Webhook Logs Error")
+        
+        return {
+            'success': False,
+            'message': error_msg,
+            'logs': []
+        }
 
 def retry_failed_webhooks():
     """ฟังก์ชันสำหรับ retry webhook ที่ล้มเหลว"""

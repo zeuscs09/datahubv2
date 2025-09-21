@@ -31,7 +31,9 @@ class SDIncidentService:
                 'chunk_size': config.chunk_size or 100,
                 'username': config.username,
                 'password': config.password,
-                'token_last_updated': config.token_last_updated
+                'token_last_updated': config.token_last_updated,
+                'use_proxy': config.use_proxy or 0,
+                'proxy_server': config.proxy_server or None
             }
         except Exception as e:
             logger.error(f"Error getting incident API config: {str(e)}")
@@ -411,8 +413,110 @@ class SDIncidentService:
                 'token': None
             }
     
+    def login_with_proxy(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Login ผ่าน Node.js Proxy Server
+        
+        Args:
+            config (Dict[str, Any]): Configuration จาก DH Incident API Config
+            
+        Returns:
+            Dict[str, Any]: ผลลัพธ์การ login และ token
+        """
+        try:
+            if not config['proxy_server']:
+                raise Exception("Proxy Server ไม่ได้ตั้งค่าใน DH Incident API Config")
+            
+            # สร้าง proxy URL (รองรับทั้ง IP และ full URL)
+            proxy_server = config['proxy_server'].strip()
+            if proxy_server.startswith('http'):
+                proxy_url = f"{proxy_server}/proxy"
+            else:
+                proxy_url = f"http://{proxy_server}/proxy"
+            
+            # สร้าง target login URL
+            target_login_url = f"{config['url_endpoint'].rstrip('/')}/login"
+            
+            frappe.log_error(title=f"🔐 Testing login through proxy...")
+            frappe.log_error(f"Proxy Server: {config['proxy_server']}")
+            frappe.log_error(f"Target URL: {target_login_url}")
+            
+            # เตรียม payload สำหรับ proxy (ตามตัวอย่าง)
+            payload = {
+                "url": target_login_url,
+                "method": "POST", 
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/plain, */*"
+                },
+                "body": {
+                    "username": config['username'],
+                    "password": config['password']
+                }
+            }
+            
+            # ส่ง request ผ่าน proxy server
+            import time
+            start_time = time.time()
+            response = requests.post(proxy_url, json=payload, timeout=30)
+            end_time = time.time()
+            
+            logger.info(f"⏱️  Response time: {(end_time - start_time)*1000:.0f}ms")
+            
+            if response.status_code == 200:
+                data = response.json()
+                target_status = data.get('status_code', 0)
+                
+                logger.info(f"📊 Proxy Status: {response.status_code}")
+                logger.info(f"🎯 Target API Status: {target_status}")
+                
+                if target_status == 200:
+                    user = data['data']['user']
+                    token = data['data']['token']['token']
+                    
+                    logger.info(f"🎉 LOGIN SUCCESS!")
+                    logger.info(f"👤 User: {user['email']} (ID: {user['id']})")
+                    logger.info(f"🎫 Token: {token[:50]}...")
+                    logger.info(f"🕒 Login time: {data.get('timing', {}).get('timestamp', '')}")
+                    
+                    return {
+                        'success': True,
+                        'token': token,
+                        'user_info': user,
+                        'response_data': data['data'],
+                        'proxy_info': {
+                            'proxy_server': config['proxy_server'],
+                            'response_time_ms': (end_time - start_time) * 1000
+                        }
+                    }
+                else:
+                    error_msg = f"❌ Nestle API returned: {target_status}"
+                    logger.error(error_msg)
+                    return {
+                        'success': False,
+                        'message': error_msg,
+                        'token': None
+                    }
+            else:
+                error_msg = f"❌ Proxy error: {response.status_code}"
+                logger.error(error_msg)
+                logger.error(f"Response: {response.text}")
+                return {
+                    'success': False,
+                    'message': f"{error_msg} - {response.text}",
+                    'token': None
+                }
+                
+        except Exception as e:
+            error_msg = f"❌ Request failed: {e}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'message': error_msg,
+                'token': None
+            }
+    
     def login_and_get_token(self) -> Dict[str, Any]:
-        """Login และดึง token จาก API
+        """Login และดึง token จาก API (รองรับทั้ง direct และ proxy)
         
         Returns:
             Dict[str, Any]: ผลลัพธ์การ login และ token
@@ -426,6 +530,13 @@ class SDIncidentService:
             
             if not config['url_endpoint']:
                 raise Exception("URL Endpoint ไม่ได้ตั้งค่าใน DH Incident API Config")
+            
+            # ตรวจสอบว่าใช้ proxy หรือไม่
+            if config.get('use_proxy') and config.get('proxy_server'):
+                logger.info("Using proxy for login")
+                return self.login_with_proxy(config)
+            else:
+                logger.info("Using direct connection for login")
             
             # สร้าง login URL
             login_url = f"{config['url_endpoint'].rstrip('/')}/login"
@@ -575,7 +686,7 @@ class SDIncidentService:
             # อัพเดท DH Incident API Config
             config = frappe.get_single("DH Incident API Config")
             config.header = json.dumps(new_header, ensure_ascii=False, indent=2)
-            config.token_last_updated = datetime.now()
+            config.token_last_updated = now_datetime()
             config.save()
             
             # อัพเดท DH Setting sd_header
